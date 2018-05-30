@@ -54,10 +54,10 @@ TEST(Test_Blockchain, testAssignIncomingAddress)
     static const proto::ContactItemType INDIVIDUAL =
         proto::CITEMTYPE_INDIVIDUAL;
     const std::string& Alice =
-        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Alice", "", 0);
+        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Alice", "", 30);
     std::cout << "Created Alice's Nym: " << Alice << " !!\n";
     const std::string& Bob =
-        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Bob", "", 1);
+        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Bob", "", 40);
     std::cout << "Created Bob's Nym: " << Bob << " !!\n";
     const std::uint32_t BTC = proto::CITEMTYPE_BTC;
 

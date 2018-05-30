@@ -53,13 +53,13 @@ TEST(Test_AccountList, testList)
     static const proto::ContactItemType INDIVIDUAL =
         proto::CITEMTYPE_INDIVIDUAL;
     const std::string& Alice =
-        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Alice", "", 0);
+        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "testList_Alice", "", 10);
     std::cout << "Created Alice's Nym: " << Alice << " !!\n";
     const std::string& AliceN2 =
-        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Alice", "", 1);
+        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "testList_Alice", "", 11);
     std::cout << "Created Alice's 2nd Nym: " << AliceN2 << " !!\n";
     const std::string& Bob =
-        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "Bob", "", 0);
+        opentxs::OT::App().API().Exec().CreateNymHD(INDIVIDUAL, "testList_Bob", "", 20);
     std::cout << "Created Bob's Nym: " << Bob << " !!\n";
     const auto BTC = static_cast<proto::ContactItemType>(proto::CITEMTYPE_BTC);
     const auto LTC = static_cast<proto::ContactItemType>(proto::CITEMTYPE_LTC);
