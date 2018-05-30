@@ -285,9 +285,6 @@ bool Blockchain::AssignAddress(
     address.set_contact(sContactID);
     account->set_revision(account->revision() + 1);
 
-    // check: the (deposit or change) address has a transaction
-    bool hasTxs = address.incoming_size() > 0;
-
     // check: does the activity thread exist between nym and contact?
     bool threadExists = false;
     const auto threadList = storage_.ThreadList(sNymID, false);
@@ -296,19 +293,34 @@ bool Blockchain::AssignAddress(
 
         if (id == sContactID) {
             threadExists = true;
-            break;
         }
     }
 
-    // If address has transactions, create the thread and add the transaction
-    if (!threadExists && hasTxs) {
-        for (int idx = 0; idx < address.incoming_size(); idx++) {
-            const auto txid = address.incoming(idx);
-            std::shared_ptr<proto::BlockchainTransaction> transaction =
-                Transaction(address.incoming(idx));
-            const proto::BlockchainTransaction& tx = *transaction.get();
+    if (threadExists) {
+        // check: does every incoming transaction exist as an activity
+        std::shared_ptr<proto::StorageThread> thread =
+            activity_.Thread(nymID, contactID);
+        for (const std::string& txID : address.incoming()) {
+            bool exists = false;
+            for (const auto activity : thread->item())
+                if (txID.compare(activity.id()) == 0) exists = true;
+
+            // add: transaction to the thread
+            if (!exists)
+                activity_.AddBlockchainTransaction(
+                    nymID,
+                    contactID,
+                    StorageBox::INCOMINGBLOCKCHAIN,
+                    *Transaction(txID));
+        }
+    } else {
+        // create the thread and add the transactions
+        for (const auto txID : address.incoming()) {
             activity_.AddBlockchainTransaction(
-                nymID, contactID, StorageBox::INCOMINGBLOCKCHAIN, tx);
+                nymID,
+                contactID,
+                StorageBox::INCOMINGBLOCKCHAIN,
+                *Transaction(txID));
         }
     }
 
