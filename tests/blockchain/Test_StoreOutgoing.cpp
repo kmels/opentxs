@@ -63,7 +63,7 @@ public:
   }
 };
   
-proto::BlockchainTransaction* MakeTransaction(const std::string& id)
+proto::BlockchainTransaction* MakeTransaction(const std::string id)
 {
   proto::BlockchainTransaction* Tx = new proto::BlockchainTransaction;
   Tx->set_version(1);
@@ -175,7 +175,9 @@ TEST_F(Test_StoreOutgoing, testDeposit_UnknownContact)
   ASSERT_STREQ(ReloadedAccount->outgoing(1).c_str(), Tx->txid().c_str());
 
   // test: Activity::Thread contains deposit item
-  std::shared_ptr<proto::StorageThread> Thread_AC = opentxs::OT::App().Activity().Thread(Identifier(Alice), Identifier(Charly));
+  OTIdentifier CharlyContactID = Identifier(Charly);
+  //OTIdentifier CharlyContactID = OT::App().Contact().ContactID(Identifier(Charly));
+  std::shared_ptr<proto::StorageThread> Thread_AC = opentxs::OT::App().Activity().Thread(Identifier(Alice), Identifier(CharlyContactID));
   ASSERT_EQ(1, Thread_AC->item_size());
   EXPECT_EQ(1, Thread_AC->participant_size());
   EXPECT_STREQ(Charly.c_str(), Thread_AC->participant(0).c_str());

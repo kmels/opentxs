@@ -63,7 +63,7 @@ public:
   }
 };
   
-proto::BlockchainTransaction* MakeTransaction(const std::string& id)
+proto::BlockchainTransaction* MakeTransaction(const std::string id)
 {
   proto::BlockchainTransaction* Tx = new proto::BlockchainTransaction;
   Tx->set_version(1);
