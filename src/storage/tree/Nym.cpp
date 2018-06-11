@@ -127,6 +127,30 @@ Nym::Nym(
 
 std::string Nym::Alias() const { return alias_; }
 
+std::set<proto::ContactItemType> Nym::Bip47ChainList() const
+{
+    // TODO
+
+    return {};
+}
+
+std::set<std::string> Nym::Bip47ChannelList(
+    const std::string& /*contactID*/,
+    const proto::ContactItemType /*chain*/) const
+{
+    // TODO
+
+    return {};
+}
+
+std::set<std::string> Nym::Bip47ContactList(
+    const proto::ContactItemType /*chain*/) const
+{
+    // TODO
+
+    return {};
+}
+
 class Contexts* Nym::contexts() const
 {
     Lock lock(contexts_lock_);
@@ -379,6 +403,16 @@ bool Nym::Load(
     output = it->second;
 
     return bool(output);
+}
+
+bool Nym::Load(
+    const std::string& /*paymentCode*/,
+    std::shared_ptr<proto::Bip47Context>& /*context*/,
+    const bool /*checking*/) const
+{
+    // TODO
+
+    return false;
 }
 
 bool Nym::Load(
@@ -1059,6 +1093,13 @@ bool Nym::Store(
     blockchainLock.unlock();
 
     return save(writeLock);
+}
+
+bool Nym::Store(const proto::Bip47Context& /*data*/)
+{
+    // TODO
+
+    return false;
 }
 
 bool Nym::Store(

@@ -67,6 +67,7 @@ namespace opentxs::api::storage::implementation
 class Storage : public opentxs::api::storage::StorageInternal
 {
 public:
+<<<<<<< 5510f018ec630f6441899d9a2806e168d6cb321d
     ObjectList AccountList() const override;
     OTIdentifier AccountContract(const Identifier& accountID) const override;
     OTIdentifier AccountIssuer(const Identifier& accountID) const override;
@@ -85,6 +86,17 @@ public:
         const Identifier& server) const override;
     std::set<OTIdentifier> AccountsByUnit(
         const proto::ContactItemType unit) const override;
+=======
+    std::set<proto::ContactItemType> Bip47ChainList(
+        const std::string& nymID) const override;
+    std::set<std::string> Bip47ChannelList(
+        const std::string& nymID,
+        const std::string& contactID,
+        const proto::ContactItemType chain) const override;
+    std::set<std::string> Bip47ContactList(
+        const std::string& nymID,
+        const proto::ContactItemType chain) const override;
+>>>>>>> Extend api::storage interface for bip47
     std::set<std::string> BlockchainAccountList(
         const std::string& nymID,
         const proto::ContactItemType type) const override;
@@ -119,6 +131,11 @@ public:
         const std::string& nymID,
         const std::string& accountID,
         std::shared_ptr<proto::Bip44Account>& output,
+        const bool checking = false) const override;
+    bool Load(
+        const std::string& nymID,
+        const std::string& paymentCode,
+        std::shared_ptr<proto::Bip47Context>& output,
         const bool checking = false) const override;
     bool Load(
         const std::string& id,
@@ -295,6 +312,8 @@ public:
         const std::string& nymID,
         const proto::ContactItemType type,
         const proto::Bip44Account& data) const override;
+    bool Store(const std::string& nymID, const proto::Bip47Context& data)
+        const override;
     bool Store(const proto::BlockchainTransaction& data) const override;
     bool Store(const proto::Contact& data) const override;
     bool Store(const proto::Context& data) const override;
