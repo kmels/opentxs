@@ -91,9 +91,19 @@ public:
     Editor<class PaymentWorkflows> mutable_PaymentWorkflows();
 
     std::string Alias() const;
+    std::set<proto::ContactItemType> Bip47ChainList() const;
+    std::set<std::string> Bip47ChannelList(
+        const std::string& contactID,
+        const proto::ContactItemType chain) const;
+    std::set<std::string> Bip47ContactList(
+        const proto::ContactItemType chain) const;
     bool Load(
         const std::string& id,
         std::shared_ptr<proto::Bip44Account>& output,
+        const bool checking) const;
+    bool Load(
+        const std::string& paymentCode,
+        std::shared_ptr<proto::Bip47Context>& context,
         const bool checking) const;
     bool Load(
         std::shared_ptr<proto::CredentialIndex>& output,
@@ -105,6 +115,7 @@ public:
     bool Store(
         const proto::ContactItemType type,
         const proto::Bip44Account& data);
+    bool Store(const proto::Bip47Context& data);
     bool Store(
         const proto::CredentialIndex& data,
         const std::string& alias,
