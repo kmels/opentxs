@@ -205,13 +205,13 @@ std::set<proto::ContactItemType> Storage::Bip47ChainList(
         otErr << OT_METHOD << __FUNCTION__ << ": Nym " << nymID
               << " doesn't exist." << std::endl;
 
-        return false;
+        return {};
     }
 
     return Root().Tree().NymNode().Nym(nymID).Bip47ChainList();
 }
 
-std::set<std::string> Storage::Bip47ChannelList(
+std::set<Bip47ChannelID> Storage::Bip47ChannelList(
     const std::string& nymID,
     const std::string& contactID,
     const proto::ContactItemType chain) const
@@ -220,7 +220,7 @@ std::set<std::string> Storage::Bip47ChannelList(
         otErr << OT_METHOD << __FUNCTION__ << ": Nym " << nymID
               << " doesn't exist." << std::endl;
 
-        return false;
+        return {};
     }
 
     return Root().Tree().NymNode().Nym(nymID).Bip47ChannelList(
@@ -235,7 +235,7 @@ std::set<std::string> Storage::Bip47ContactList(
         otErr << OT_METHOD << __FUNCTION__ << ": Nym " << nymID
               << " doesn't exist." << std::endl;
 
-        return false;
+        return {};
     }
 
     return Root().Tree().NymNode().Nym(nymID).Bip47ContactList(chain);

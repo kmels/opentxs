@@ -67,7 +67,6 @@ namespace opentxs::api::storage::implementation
 class Storage : public opentxs::api::storage::StorageInternal
 {
 public:
-<<<<<<< 5510f018ec630f6441899d9a2806e168d6cb321d
     ObjectList AccountList() const override;
     OTIdentifier AccountContract(const Identifier& accountID) const override;
     OTIdentifier AccountIssuer(const Identifier& accountID) const override;
@@ -86,17 +85,15 @@ public:
         const Identifier& server) const override;
     std::set<OTIdentifier> AccountsByUnit(
         const proto::ContactItemType unit) const override;
-=======
     std::set<proto::ContactItemType> Bip47ChainList(
         const std::string& nymID) const override;
-    std::set<std::string> Bip47ChannelList(
+    std::set<Bip47ChannelID> Bip47ChannelList(
         const std::string& nymID,
         const std::string& contactID,
         const proto::ContactItemType chain) const override;
     std::set<std::string> Bip47ContactList(
         const std::string& nymID,
         const proto::ContactItemType chain) const override;
->>>>>>> Extend api::storage interface for bip47
     std::set<std::string> BlockchainAccountList(
         const std::string& nymID,
         const proto::ContactItemType type) const override;
