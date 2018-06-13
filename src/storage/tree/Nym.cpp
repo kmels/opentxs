@@ -1095,12 +1095,6 @@ bool Nym::Store(
         return false;
     }
 
-    if (false == proto::Validate(data, VERBOSE)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Invalid account." << std::endl;
-
-        return false;
-    }
-
     Lock writeLock(write_lock_, std::defer_lock);
     Lock blockchainLock(blockchain_lock_, std::defer_lock);
     std::lock(writeLock, blockchainLock);
@@ -1149,27 +1143,11 @@ bool Nym::Store(const proto::Bip47Context& context)
     std::lock(writeLock, bip47Lock);
 
     for (const auto& chain : context.chain()) {
-        const auto it = bip47_contexts_.find(chain.type());
-
-        if (it == bip47_contexts_.end()) {
-            bip47_contexts_.emplace(
-                chain.type(),
-                std::map<std::string, std::set<Bip47ChannelID>>());
-        }
-
+        auto& chans = bip47_contexts_[chain.type()];
         for (const auto& channel : chain.channel()) {
-            const auto innerMap = it->second;
-            const auto inner = innerMap.find(channel.contact());
-            if (inner == innerMap.end()) {
-                std::set<Bip47ChannelID> elems = {
-                    make_pair(channel.contact(), channel.paymentcode())};
-                bip47_contexts_[chain.type()].emplace(channel.contact(), elems);
-            } else {
-                Bip47ChannelID newChan =
-                    make_pair(channel.contact(), channel.paymentcode());
-                bip47_contexts_[chain.type()][channel.contact()].insert(
-                    newChan);
-            }
+            auto& channels = chans[channel.contact()];
+            channels.emplace(
+                Bip47ChannelID{channel.contact(), channel.paymentcode()});
         }
     }
 
