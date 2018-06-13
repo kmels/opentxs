@@ -57,6 +57,7 @@ namespace opentxs
 typedef std::function<void(const proto::CredentialIndex&)> NymLambda;
 typedef std::function<void(const proto::ServerContract&)> ServerLambda;
 typedef std::function<void(const proto::UnitDefinition&)> UnitLambda;
+using Bip47ChannelID = std::pair<std::string, std::string>;
 
 namespace api
 {
@@ -83,9 +84,9 @@ public:
         const Identifier& server) const = 0;
     virtual std::set<OTIdentifier> AccountsByUnit(
         const proto::ContactItemType unit) const = 0;
-    virtual std::set<std::string> Bip47ChainList(
+    virtual std::set<proto::ContactItemType> Bip47ChainList(
         const std::string& nymID) const = 0;
-    virtual std::set<std::string> Bip47ChannelList(
+    virtual std::set<Bip47ChannelID> Bip47ChannelList(
         const std::string& nymID,
         const std::string& contactID,
         const proto::ContactItemType chain) const = 0;

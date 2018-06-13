@@ -41,6 +41,7 @@
 
 #include "Internal.hpp"
 
+#include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/api/Editor.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/Types.hpp"
@@ -52,7 +53,12 @@
 #include <set>
 #include <string>
 
-namespace opentxs::storage
+namespace opentxs
+{
+using Bip47ChannelMap = std::map<std::string, std::set<Bip47ChannelID>>;
+using Bip47ChainMap = std::map<proto::ContactItemType, Bip47ChannelMap>;
+
+namespace storage
 {
 class Nym : public Node
 {
@@ -92,7 +98,7 @@ public:
 
     std::string Alias() const;
     std::set<proto::ContactItemType> Bip47ChainList() const;
-    std::set<std::string> Bip47ChannelList(
+    std::set<Bip47ChannelID> Bip47ChannelList(
         const std::string& contactID,
         const proto::ContactItemType chain) const;
     std::set<std::string> Bip47ContactList(
@@ -181,6 +187,8 @@ private:
     std::string workflows_root_;
     mutable std::mutex workflows_lock_;
     mutable std::unique_ptr<class PaymentWorkflows> workflows_;
+    mutable std::shared_mutex bip47_lock_;
+    Bip47ChainMap bip47_contexts_{};
 
     PeerRequests* sent_request_box() const;
     PeerRequests* incoming_request_box() const;
@@ -220,5 +228,6 @@ private:
     Nym operator=(const Nym&) = delete;
     Nym operator=(Nym&&) = delete;
 };
-}  // namespace opentxs::storage
+}  // namespace storage
+}  // namespace opentxs
 #endif  // OPENTXS_STORAGE_TREE_NYM_HPP

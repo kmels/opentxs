@@ -59,6 +59,7 @@
 
 namespace opentxs::storage
 {
+
 Nym::Nym(
     const opentxs::api::storage::Driver& storage,
     const std::string& id,
@@ -116,6 +117,8 @@ Nym::Nym(
     , workflows_root_(Node::BLANK_HASH)
     , workflows_lock_()
     , workflows_(nullptr)
+    , bip47_lock_()
+    , bip47_contexts_()
 {
     if (check_hash(hash)) {
         init(hash);
@@ -129,26 +132,55 @@ std::string Nym::Alias() const { return alias_; }
 
 std::set<proto::ContactItemType> Nym::Bip47ChainList() const
 {
-    // TODO
+    std::set<proto::ContactItemType> output{};
+    sLock lock(bip47_lock_);
 
-    return {};
+    for (const auto& it : bip47_contexts_) {
+        if (!it.second.empty()) { output.emplace(it.first); }
+    }
+
+    return output;
 }
 
-std::set<std::string> Nym::Bip47ChannelList(
-    const std::string& /*contactID*/,
-    const proto::ContactItemType /*chain*/) const
+std::set<Bip47ChannelID> Nym::Bip47ChannelList(
+    const std::string& contactID,
+    const proto::ContactItemType chain) const
 {
-    // TODO
+    sLock lock(bip47_lock_);
+    const auto outer = bip47_contexts_.find(chain);
 
-    return {};
+    // check: given chain exists
+    if (outer == bip47_contexts_.end()) { return {}; }
+
+    const auto& innerMap = outer->second;
+
+    // check: contact has channels
+    const auto inner = innerMap.find(contactID);
+
+    if (inner == innerMap.end()) { return {}; }
+
+    return inner->second;
 }
 
 std::set<std::string> Nym::Bip47ContactList(
-    const proto::ContactItemType /*chain*/) const
+    const proto::ContactItemType chain) const
 {
-    // TODO
+    std::set<std::string> contacts{};
+    sLock lock(bip47_lock_);
+    const auto it = bip47_contexts_.find(chain);
 
-    return {};
+    // check: given chain exists
+    if (it == bip47_contexts_.end()) { return contacts; }
+
+    const auto& innerMap = it->second;
+
+    for (const auto& channelID : innerMap) {
+        // check: contact has at least one channel
+        if (!channelID.second.empty()) { contacts.emplace(channelID.first); }
+    }
+
+    lock.unlock();
+    return contacts;
 }
 
 class Contexts* Nym::contexts() const
@@ -406,12 +438,11 @@ bool Nym::Load(
 }
 
 bool Nym::Load(
-    const std::string& /*paymentCode*/,
-    std::shared_ptr<proto::Bip47Context>& /*context*/,
-    const bool /*checking*/) const
+    const std::string& paymentCode,
+    std::shared_ptr<proto::Bip47Context>& output,
+    const bool checking) const
 {
     // TODO
-
     return false;
 }
 
@@ -1095,11 +1126,54 @@ bool Nym::Store(
     return save(writeLock);
 }
 
-bool Nym::Store(const proto::Bip47Context& /*data*/)
+bool Nym::Store(const proto::Bip47Context& context)
 {
-    // TODO
+    const auto& paymentCode = context.paymentcode();
 
-    return false;
+    if (paymentCode.empty()) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Invalid payment code."
+              << std::endl;
+
+        return false;
+    }
+
+    if (false == proto::Validate(context, VERBOSE)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Invalid BIP47Context."
+              << std::endl;
+
+        return false;
+    }
+
+    Lock writeLock(write_lock_, std::defer_lock);
+    sLock bip47Lock(bip47_lock_, std::defer_lock);
+    std::lock(writeLock, bip47Lock);
+
+    for (const auto& chain : context.chain()) {
+        const auto it = bip47_contexts_.find(chain.type());
+
+        if (it == bip47_contexts_.end()) {
+            bip47_contexts_.emplace(
+                chain.type(),
+                std::map<std::string, std::set<Bip47ChannelID>>());
+        }
+
+        for (const auto& channel : chain.channel()) {
+            const auto innerMap = it->second;
+            const auto inner = innerMap.find(channel.contact());
+            if (inner == innerMap.end()) {
+                std::set<Bip47ChannelID> elems = {
+                    make_pair(channel.contact(), channel.paymentcode())};
+                bip47_contexts_[chain.type()].emplace(channel.contact(), elems);
+            } else {
+                Bip47ChannelID newChan =
+                    make_pair(channel.contact(), channel.paymentcode());
+                bip47_contexts_[chain.type()][channel.contact()].insert(
+                    newChan);
+            }
+        }
+    }
+
+    return save(writeLock);
 }
 
 bool Nym::Store(
