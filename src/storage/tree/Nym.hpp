@@ -188,7 +188,8 @@ private:
     mutable std::mutex workflows_lock_;
     mutable std::unique_ptr<class PaymentWorkflows> workflows_;
     mutable std::shared_mutex bip47_lock_;
-    Bip47ChainMap bip47_contexts_{};
+    Bip47ChainMap bip47_channels_{};
+    std::set<std::string> bip47_contexts_;
 
     PeerRequests* sent_request_box() const;
     PeerRequests* incoming_request_box() const;
