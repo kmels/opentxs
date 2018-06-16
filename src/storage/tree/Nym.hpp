@@ -80,6 +80,7 @@ public:
     const PeerRequests& SentRequestBox() const;
     const class Threads& Threads() const;
     const class PaymentWorkflows& PaymentWorkflows() const;
+    const class Bip47Contexts& Bip47Contexts() const;
 
     Editor<class Contexts> mutable_Contexts();
     Editor<PeerReplies> mutable_FinishedReplyBox();
@@ -95,6 +96,7 @@ public:
     Editor<PeerRequests> mutable_SentRequestBox();
     Editor<class Threads> mutable_Threads();
     Editor<class PaymentWorkflows> mutable_PaymentWorkflows();
+    Editor<class Bip47Contexts> mutable_Bip47Contexts();
 
     std::string Alias() const;
     std::set<proto::ContactItemType> Bip47ChainList() const;
@@ -189,7 +191,9 @@ private:
     mutable std::unique_ptr<class PaymentWorkflows> workflows_;
     mutable std::shared_mutex bip47_lock_;
     Bip47ChainMap bip47_channels_{};
-    std::set<std::string> bip47_contexts_;
+    mutable std::mutex bip47_contexts_lock_;
+    mutable std::unique_ptr<class Bip47Contexts> bip47_contexts_;
+    std::string bip47_contexts_root_;
 
     PeerRequests* sent_request_box() const;
     PeerRequests* incoming_request_box() const;
@@ -205,6 +209,7 @@ private:
     class Contexts* contexts() const;
     class Issuers* issuers() const;
     class PaymentWorkflows* workflows() const;
+    class Bip47Contexts* bip47contexts() const;
 
     void save(PeerReplies* input, const Lock& lock, StorageBox type);
     void save(PeerRequests* input, const Lock& lock, StorageBox type);
@@ -213,6 +218,7 @@ private:
     void save(class Contexts* input, const Lock& lock);
     void save(class Issuers* input, const Lock& lock);
     void save(class PaymentWorkflows* input, const Lock& lock);
+    void save(class Bip47Contexts* input, const Lock& lock);
 
     void init(const std::string& hash) override;
     bool save(const Lock& lock) const override;
