@@ -43,6 +43,8 @@
 
 #include "storage/drivers/StorageMultiplex.hpp"
 #include "storage/tree/Accounts.hpp"
+#include "storage/tree/Bip47Context.hpp"
+#include "storage/tree/Bip47Contexts.hpp"
 #include "storage/tree/BlockchainTransactions.hpp"
 #include "storage/tree/Contacts.hpp"
 #include "storage/tree/Contexts.hpp"

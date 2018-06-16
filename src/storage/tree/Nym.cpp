@@ -41,6 +41,8 @@
 #include "Nym.hpp"
 
 #include "storage/Plugin.hpp"
+#include "Bip47Context.hpp"
+#include "Bip47Contexts.hpp"
 #include "Contexts.hpp"
 #include "Issuers.hpp"
 #include "Mailbox.hpp"
@@ -119,7 +121,9 @@ Nym::Nym(
     , workflows_(nullptr)
     , bip47_lock_()
     , bip47_channels_()
-    , bip47_contexts_({})
+    , bip47_contexts_lock_()
+    , bip47_contexts_(nullptr)
+    , bip47_contexts_root_(Node::BLANK_HASH)
 {
     if (check_hash(hash)) {
         init(hash);
@@ -402,9 +406,9 @@ void Nym::init(const std::string& hash)
             channels.emplace(Bip47ChannelID{it_channel.contact(), pcode});
         }
     }
-    for (const auto& it_context : serialized->bip47context()) {
-        bip47_contexts_.emplace(normalize_hash(it_context.hash()));
-    }
+    // for (const auto& it_context : serialized->bip47context()) {
+    // bip47_contexts_.emplace(normalize_hash(it_context.hash()));
+    //}
 }
 
 class Issuers* Nym::issuers() const
@@ -684,9 +688,24 @@ Editor<class PaymentWorkflows> Nym::mutable_PaymentWorkflows()
     return Editor<class PaymentWorkflows>(write_lock_, workflows(), callback);
 }
 
+Editor<class Bip47Contexts> Nym::mutable_Bip47Contexts()
+{
+    std::function<void(class Bip47Contexts*, Lock&)> callback =
+        [&](class Bip47Contexts* in, Lock& lock) -> void {
+        this->save(in, lock);
+    };
+
+    return Editor<class Bip47Contexts>(write_lock_, bip47contexts(), callback);
+}
+
 const class PaymentWorkflows& Nym::PaymentWorkflows() const
 {
     return *workflows();
+}
+
+const class Bip47Contexts& Nym::Bip47Contexts() const
+{
+    return *bip47contexts();
 }
 
 PeerReplies* Nym::processed_reply_box() const
@@ -899,6 +918,26 @@ void Nym::save(class PaymentWorkflows* input, const Lock& lock)
     }
 }
 
+void Nym::save(class Bip47Contexts* input, const Lock& lock)
+{
+    if (!verify_write_lock(lock)) {
+        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
+        OT_FAIL;
+    }
+
+    if (nullptr == input) {
+        otErr << __FUNCTION__ << ": Null target" << std::endl;
+        OT_FAIL;
+    }
+
+    bip47_contexts_root_ = input->Root();
+
+    if (!save(lock)) {
+        otErr << __FUNCTION__ << ": Save error" << std::endl;
+        OT_FAIL;
+    }
+}
+
 class Threads* Nym::threads() const
 {
     Lock lock(threads_lock_);
@@ -1096,9 +1135,10 @@ proto::StorageNym Nym::serialize() const
         }
     }
 
-    for (const auto& it_context : bip47_contexts_) {
-        set_hash(version_, nymid_, it_context, *serialized.add_bip47context());
-    }
+    // for (const auto& it_context : bip47_contexts_) {
+    //    set_hash(version_, nymid_, it_context,
+    //    *serialized.add_bip47context());
+    // }
 
     serialized.set_issuers(issuers_root_);
     serialized.set_paymentworkflow(workflows_root_);
@@ -1255,6 +1295,26 @@ class PaymentWorkflows* Nym::workflows() const
     lock.unlock();
 
     return workflows_.get();
+}
+
+class Bip47Contexts* Nym::bip47contexts() const
+{
+    Lock lock(bip47_contexts_lock_);
+
+    if (false == bool(bip47_contexts_)) {
+        bip47_contexts_.reset(
+            new class Bip47Contexts(driver_, bip47_contexts_root_));
+
+        if (false == bool(bip47_contexts_)) {
+            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
+
+            OT_FAIL
+        }
+    }
+
+    lock.unlock();
+
+    return bip47_contexts_.get();
 }
 
 Nym::~Nym() {}
