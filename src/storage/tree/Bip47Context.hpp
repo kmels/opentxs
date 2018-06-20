@@ -32,12 +32,12 @@ private:
     std::string id_;
     std::string alias_;
     std::size_t index_{0};
-    std::map<std::string, proto::StorageThreadItem> items_;
+    std::map<proto::ContactItemType, proto::Bip47Chain> items_;
 
     void init(const std::string& hash) override;
     bool save(const Lock& lock) const override;
     proto::Bip47Context serialize(const Lock& lock) const;
-    void upgrade(const Lock& lock);
+
     Bip47Context(
         const opentxs::api::storage::Driver& storage,
         const std::string& id,
@@ -51,10 +51,7 @@ private:
     Bip47Context operator=(Bip47Context&&) = delete;
 
 public:
-    std::string PaymentCode() const;
-    std::size_t ChainCount() const;
-
-    bool Migrate(const opentxs::api::storage::Driver& to) const override;
+    proto::Bip47Context Items() const;
     ~Bip47Context() = default;
 };
 }  // namespace storage

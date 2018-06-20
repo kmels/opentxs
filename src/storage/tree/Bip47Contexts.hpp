@@ -47,10 +47,17 @@ private:
     Bip47Contexts operator=(Bip47Contexts&&) = delete;
 
 public:
-    bool Migrate(const opentxs::api::storage::Driver& to) const override;
+    bool Exists(const std::string& id) const;
+    bool Load(
+        const std::string& id,
+        std::shared_ptr<proto::Bip47Context>& output,
+        const bool checking) const;
+
+    bool Delete(const std::string& id);
+    bool Store(const proto::Bip47Context& data);
+
     const class Bip47Context& Bip47Context(const std::string& id) const;
     Editor<class Bip47Context> mutable_Bip47Context(const std::string& id);
-    bool Rename(const std::string& existingID, const std::string& newID);
     ~Bip47Contexts() = default;
 };
 }  // namespace storage

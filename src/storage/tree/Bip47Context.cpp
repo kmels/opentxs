@@ -29,8 +29,6 @@ Bip47Context::Bip47Context(
     root_ = Node::BLANK_HASH;
 }
 
-// std::string Bip47Context::PaymentCode() const { return paymentcode_; }
-
 void Bip47Context::init(const std::string& hash)
 {
     std::shared_ptr<proto::Bip47Context> serialized;
@@ -46,34 +44,12 @@ void Bip47Context::init(const std::string& hash)
 
     if (1 > version_) { version_ = 1; }
 
-    /*for (const auto& it : serialized->item()) {
-        const auto& index = it.index();
-        items_.emplace(it.id(), it);
-
-        if (index >= index_) { index_ = index + 1; }
-        }*/
+    for (const auto& it : serialized->chain()) {
+        items_.emplace(it.type(), it);
+    }
 
     Lock lock(write_lock_);
-    upgrade(lock);
-}
-
-std::size_t Bip47Context::ChainCount() const
-{
-    Lock lock(write_lock_);
-    std::size_t output{0};
-
-    /*for (const auto& it : items_) {
-        const auto& item = it.second;
-
-        if (item.unread()) { ++output; }
-        }*/
-
-    return output;
-}
-
-bool Bip47Context::Migrate(const opentxs::api::storage::Driver& to) const
-{
-    return Node::migrate(root_, to);
+    save(lock);
 }
 
 proto::Bip47Context Bip47Context::serialize(const Lock& lock) const
@@ -93,30 +69,11 @@ bool Bip47Context::save(const Lock& lock) const
     return driver_.StoreProto(serialized, root_);
 }
 
-void Bip47Context::upgrade(const Lock& lock)
+proto::Bip47Context Bip47Context::Items() const
 {
-    OT_ASSERT(verify_write_lock(lock));
+    Lock lock(write_lock_);
 
-    bool changed{false};
-
-    for (auto& it : items_) {
-        auto& item = it.second;
-        const auto box = static_cast<StorageBox>(item.box());
-
-        switch (box) {
-            case StorageBox::MAILOUTBOX:
-            case StorageBox::OUTGOINGBLOCKCHAIN: {
-                if (item.unread()) {
-                    item.set_unread(false);
-                    changed = true;
-                }
-            } break;
-            default: {
-            }
-        }
-    }
-
-    if (changed) { save(lock); }
+    return serialize(lock);
 }
 
 }  // namespace storage

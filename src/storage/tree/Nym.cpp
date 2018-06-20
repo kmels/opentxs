@@ -56,7 +56,7 @@
 
 #define CURRENT_VERSION 6
 #define BLOCKCHAIN_INDEX_VERSION 1
-
+#define BIP47_CHANNEL_INDEX_VERSION 1
 #define OT_METHOD "opentxs::storage::Nym::"
 
 namespace opentxs::storage
@@ -122,7 +122,7 @@ Nym::Nym(
     , bip47_lock_()
     , bip47_channels_()
     , bip47_contexts_lock_()
-    , bip47_contexts_(nullptr)
+    , bip47_contexts_()
     , bip47_contexts_root_(Node::BLANK_HASH)
 {
     if (check_hash(hash)) {
@@ -406,9 +406,12 @@ void Nym::init(const std::string& hash)
             channels.emplace(Bip47ChannelID{it_channel.contact(), pcode});
         }
     }
-    // for (const auto& it_context : serialized->bip47context()) {
-    // bip47_contexts_.emplace(normalize_hash(it_context.hash()));
-    //}
+
+    if (serialized->has_bip47contexts()) {
+        threads_root_ = normalize_hash(serialized->bip47contexts().hash());
+    } else {
+        threads_root_ = Node::BLANK_HASH;
+    }
 }
 
 class Issuers* Nym::issuers() const
@@ -453,15 +456,6 @@ bool Nym::Load(
     output = it->second;
 
     return bool(output);
-}
-
-bool Nym::Load(
-    const std::string& paymentCode,
-    std::shared_ptr<proto::Bip47Context>& output,
-    const bool checking) const
-{
-    // TODO
-    return false;
 }
 
 bool Nym::Load(
@@ -1125,7 +1119,7 @@ proto::StorageNym Nym::serialize() const
 
         for (const auto& it_contact : it_chain.second) {
             auto& channel = *serialized.add_bip47channelindex();
-            channel.set_version(1);
+            channel.set_version(BIP47_CHANNEL_INDEX_VERSION);
             channel.set_chain(chain);
             channel.set_contact(it_contact.first);
 
@@ -1135,11 +1129,11 @@ proto::StorageNym Nym::serialize() const
         }
     }
 
-    // for (const auto& it_context : bip47_contexts_) {
-    //    set_hash(version_, nymid_, it_context,
-    //    *serialized.add_bip47context());
-    // }
-
+    set_hash(
+        version_,
+        nymid_,
+        bip47_contexts_root_,
+        *serialized.mutable_bip47contexts());
     serialized.set_issuers(issuers_root_);
     serialized.set_paymentworkflow(workflows_root_);
 

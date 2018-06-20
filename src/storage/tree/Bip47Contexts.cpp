@@ -13,7 +13,7 @@
 
 #define CURRENT_VERSION 1
 
-//#define OT_METHOD "opentxs::storage::Bip47Contexts::"
+#define OT_METHOD "opentxs::storage::Bip47Contexts::"
 
 #include "Node.hpp"
 
@@ -34,30 +34,49 @@ Bip47Contexts::Bip47Contexts(
     }
 }
 
+bool Bip47Contexts::Delete(const std::string& id) { return delete_item(id); }
+
+bool Bip47Contexts::Exists(const std::string& id) const
+{
+    std::unique_lock<std::mutex> lock(write_lock_);
+
+    return item_map_.find(id) != item_map_.end();
+}
+
 void Bip47Contexts::init(const std::string& hash)
 {
-    // TODO
+    std::shared_ptr<proto::StorageNymList> serialized;
+    driver_.LoadProto(hash, serialized);
+
+    if (!serialized) {
+        std::cerr << __FUNCTION__ << ": Failed to load thread list index file."
+                  << std::endl;
+        abort();
+    }
+
+    version_ = serialized->version();
+
+    // Upgrade to version 2
+    if (2 > version_) { version_ = 2; }
+
+    for (const auto& it : serialized->nym()) {
+        item_map_.emplace(
+            it.itemid(), Metadata{it.hash(), it.alias(), 0, false});
+    }
 }
 
 bool Bip47Contexts::save(const Lock& lock) const
 {
-    // TODO
-    return false;
-}
-
-bool Bip47Contexts::Migrate(const opentxs::api::storage::Driver& to) const
-{
-    bool output{true};
-
-    for (const auto index : item_map_) {
-        // TODO: const auto& id = index.first;
-        // TODO: const auto& node = *bip47context(id);
-        // TODO: output &= node.Migrate(to);
+    if (!verify_write_lock(lock)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Lock failure." << std::endl;
+        OT_FAIL;
     }
 
-    output &= migrate(root_, to);
+    auto serialized = serialize();
 
-    return output;
+    if (false == proto::Validate(serialized, VERBOSE)) { return false; }
+
+    return driver_.StoreProto(serialized, root_);
 }
 
 class Bip47Context* Bip47Contexts::bip47context(const std::string& id) const
@@ -120,6 +139,24 @@ proto::StorageNymList Bip47Contexts::serialize() const
     }
 
     return serialized;
+}
+
+bool Bip47Contexts::Load(
+    const std::string& id,
+    std::shared_ptr<proto::Bip47Context>& output,
+    const bool checking) const
+{
+    std::string alias{};
+
+    return load_proto<proto::Bip47Context>(id, output, alias, checking);
+}
+
+bool Bip47Contexts::Store(const proto::Bip47Context& data)
+{
+    std::string alias{};
+    std::string plaintext{};
+
+    return store_proto(data, data.paymentcode(), alias, plaintext);
 }
 
 }  // namespace storage

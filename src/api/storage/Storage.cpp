@@ -444,17 +444,24 @@ bool Storage::Load(
     std::shared_ptr<proto::Bip47Context>& context,
     const bool checking) const
 {
-    if (false == Root().Tree().NymNode().Exists(nymID)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Nym " << nymID
-              << " doesn't exist." << std::endl;
+    const bool exists =
+        Root().Tree().NymNode().Nym(nymID).Bip47Contexts().Exists(paymentCode);
 
-        return false;
-    }
+    if (!exists) { return false; }
 
-    std::string notUsed{""};
+    context.reset(new proto::Bip47Context);
 
-    return Root().Tree().NymNode().Nym(nymID).Load(
-        paymentCode, context, checking);
+    if (!context) { return false; }
+
+    *context = Root()
+                   .Tree()
+                   .NymNode()
+                   .Nym(nymID)
+                   .Bip47Contexts()
+                   .Bip47Context(paymentCode)
+                   .Items();
+
+    return bool(context);
 }
 
 bool Storage::Load(

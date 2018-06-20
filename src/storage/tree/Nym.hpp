@@ -110,10 +110,6 @@ public:
         std::shared_ptr<proto::Bip44Account>& output,
         const bool checking) const;
     bool Load(
-        const std::string& paymentCode,
-        std::shared_ptr<proto::Bip47Context>& context,
-        const bool checking) const;
-    bool Load(
         std::shared_ptr<proto::CredentialIndex>& output,
         std::string& alias,
         const bool checking) const;
