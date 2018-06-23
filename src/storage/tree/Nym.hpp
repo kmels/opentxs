@@ -50,6 +50,7 @@
 #include <cstdint>
 #include <map>
 #include <set>
+#include <shared_mutex>
 #include <string>
 
 namespace opentxs::storage
@@ -60,35 +61,37 @@ public:
     std::set<std::string> BlockchainAccountList(
         const proto::ContactItemType type) const;
 
-    const class Contexts& Contexts() const;
+    const storage::Bip47Channels& Bip47Channels() const;
+    const storage::Contexts& Contexts() const;
     const PeerReplies& FinishedReplyBox() const;
     const PeerRequests& FinishedRequestBox() const;
     const PeerReplies& IncomingReplyBox() const;
     const PeerRequests& IncomingRequestBox() const;
-    const class Issuers& Issuers() const;
+    const storage::Issuers& Issuers() const;
     const Mailbox& MailInbox() const;
     const Mailbox& MailOutbox() const;
     const PeerReplies& ProcessedReplyBox() const;
     const PeerRequests& ProcessedRequestBox() const;
     const PeerReplies& SentReplyBox() const;
     const PeerRequests& SentRequestBox() const;
-    const class Threads& Threads() const;
-    const class PaymentWorkflows& PaymentWorkflows() const;
+    const storage::Threads& Threads() const;
+    const storage::PaymentWorkflows& PaymentWorkflows() const;
 
-    Editor<class Contexts> mutable_Contexts();
+    Editor<storage::Bip47Channels> mutable_Bip47Channels();
+    Editor<storage::Contexts> mutable_Contexts();
     Editor<PeerReplies> mutable_FinishedReplyBox();
     Editor<PeerRequests> mutable_FinishedRequestBox();
     Editor<PeerReplies> mutable_IncomingReplyBox();
     Editor<PeerRequests> mutable_IncomingRequestBox();
-    Editor<class Issuers> mutable_Issuers();
+    Editor<storage::Issuers> mutable_Issuers();
     Editor<Mailbox> mutable_MailInbox();
     Editor<Mailbox> mutable_MailOutbox();
     Editor<PeerReplies> mutable_ProcessedReplyBox();
     Editor<PeerRequests> mutable_ProcessedRequestBox();
     Editor<PeerReplies> mutable_SentReplyBox();
     Editor<PeerRequests> mutable_SentRequestBox();
-    Editor<class Threads> mutable_Threads();
-    Editor<class PaymentWorkflows> mutable_PaymentWorkflows();
+    Editor<storage::Threads> mutable_Threads();
+    Editor<storage::PaymentWorkflows> mutable_PaymentWorkflows();
 
     std::string Alias() const;
     std::set<proto::ContactItemType> Bip47ChainList() const;
@@ -134,6 +137,9 @@ private:
     mutable OTFlag private_;
     mutable std::atomic<std::uint64_t> revision_;
 
+    mutable std::mutex bip47_lock_;
+    mutable std::unique_ptr<storage::Bip47Channels> bip47_;
+    std::string bip47_root_;
     mutable std::mutex sent_request_box_lock_;
     mutable std::unique_ptr<PeerRequests> sent_request_box_;
     std::string sent_peer_request_;
@@ -182,6 +188,14 @@ private:
     mutable std::mutex workflows_lock_;
     mutable std::unique_ptr<class PaymentWorkflows> workflows_;
 
+    template <typename T, typename... Args>
+    T* construct(
+        std::mutex& mutex,
+        std::unique_ptr<T>& pointer,
+        const std::string& root,
+        Args&&... params) const;
+
+    storage::Bip47Channels* bip47() const;
     PeerRequests* sent_request_box() const;
     PeerRequests* incoming_request_box() const;
     PeerReplies* sent_reply_box() const;
@@ -192,22 +206,25 @@ private:
     PeerReplies* processed_reply_box() const;
     Mailbox* mail_inbox() const;
     Mailbox* mail_outbox() const;
-    class Threads* threads() const;
-    class Contexts* contexts() const;
-    class Issuers* issuers() const;
-    class PaymentWorkflows* workflows() const;
+    storage::Threads* threads() const;
+    storage::Contexts* contexts() const;
+    storage::Issuers* issuers() const;
+    storage::PaymentWorkflows* workflows() const;
 
-    void save(PeerReplies* input, const Lock& lock, StorageBox type);
-    void save(PeerRequests* input, const Lock& lock, StorageBox type);
-    void save(Mailbox* input, const Lock& lock, StorageBox type);
-    void save(class Threads* input, const Lock& lock);
-    void save(class Contexts* input, const Lock& lock);
-    void save(class Issuers* input, const Lock& lock);
-    void save(class PaymentWorkflows* input, const Lock& lock);
+    template <typename T>
+    Editor<T> editor(
+        std::string& root,
+        std::mutex& mutex,
+        T* (Nym::*get)() const);
 
     void init(const std::string& hash) override;
     bool save(const Lock& lock) const override;
-    void update_hash(const StorageBox type, const std::string& root);
+    template <typename O>
+    void _save(
+        O* input,
+        const Lock& lock,
+        std::mutex& mutex,
+        std::string& root);
     proto::StorageNym serialize() const;
 
     Nym(const opentxs::api::storage::Driver& storage,

@@ -41,6 +41,7 @@
 #include "Nym.hpp"
 
 #include "storage/Plugin.hpp"
+#include "Bip47Channels.hpp"
 #include "Contexts.hpp"
 #include "Issuers.hpp"
 #include "Mailbox.hpp"
@@ -52,7 +53,7 @@
 
 #include <functional>
 
-#define CURRENT_VERSION 6
+#define CURRENT_VERSION 7
 #define BLOCKCHAIN_INDEX_VERSION 1
 
 #define OT_METHOD "opentxs::storage::Nym::"
@@ -71,6 +72,9 @@ Nym::Nym(
     , checked_(Flag::Factory(false))
     , private_(Flag::Factory(false))
     , revision_(0)
+    , bip47_lock_{}
+    , bip47_{nullptr}
+    , bip47_root_{Node::BLANK_HASH}
     , sent_request_box_lock_()
     , sent_request_box_(nullptr)
     , sent_peer_request_(Node::BLANK_HASH)
@@ -127,47 +131,12 @@ Nym::Nym(
 
 std::string Nym::Alias() const { return alias_; }
 
-std::set<proto::ContactItemType> Nym::Bip47ChainList() const
+storage::Bip47Channels* Nym::bip47() const
 {
-    // TODO
-
-    return {};
+    return construct<storage::Bip47Channels>(bip47_lock_, bip47_, bip47_root_);
 }
 
-std::set<std::string> Nym::Bip47ChannelList(
-    const std::string& /*contactID*/,
-    const proto::ContactItemType /*chain*/) const
-{
-    // TODO
-
-    return {};
-}
-
-std::set<std::string> Nym::Bip47ContactList(
-    const proto::ContactItemType /*chain*/) const
-{
-    // TODO
-
-    return {};
-}
-
-class Contexts* Nym::contexts() const
-{
-    Lock lock(contexts_lock_);
-
-    if (!contexts_) {
-        contexts_.reset(new class Contexts(driver_, contexts_root_));
-
-        if (!contexts_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return contexts_.get();
-}
+const storage::Bip47Channels& Nym::Bip47Channels() const { return *bip47(); }
 
 std::set<std::string> Nym::BlockchainAccountList(
     const proto::ContactItemType type) const
@@ -181,17 +150,19 @@ std::set<std::string> Nym::BlockchainAccountList(
     return it->second;
 }
 
-const class Contexts& Nym::Contexts() const { return *contexts(); }
-
-PeerReplies* Nym::finished_reply_box() const
+template <typename T, typename... Args>
+T* Nym::construct(
+    std::mutex& mutex,
+    std::unique_ptr<T>& pointer,
+    const std::string& root,
+    Args&&... params) const
 {
-    Lock lock(finished_reply_box_lock_);
+    Lock lock(mutex);
 
-    if (!finished_reply_box_) {
-        finished_reply_box_.reset(
-            new PeerReplies(driver_, finished_peer_reply_));
+    if (false == bool(pointer)) {
+        pointer.reset(new T(driver_, root, params...));
 
-        if (!finished_reply_box_) {
+        if (!pointer) {
             otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
             OT_FAIL;
         }
@@ -199,26 +170,42 @@ PeerReplies* Nym::finished_reply_box() const
 
     lock.unlock();
 
-    return finished_reply_box_.get();
+    return pointer.get();
+}
+
+storage::Contexts* Nym::contexts() const
+{
+    return construct<storage::Contexts>(
+        contexts_lock_, contexts_, contexts_root_);
+}
+
+const storage::Contexts& Nym::Contexts() const { return *contexts(); }
+
+template <typename T>
+Editor<T> Nym::editor(
+    std::string& root,
+    std::mutex& mutex,
+    T* (Nym::*get)() const)
+{
+    std::function<void(T*, Lock&)> callback = [&](T* in, Lock& lock) -> void {
+        this->_save(in, lock, mutex, root);
+    };
+
+    return Editor<T>(write_lock_, (this->*get)(), callback);
+}
+
+PeerReplies* Nym::finished_reply_box() const
+{
+    return construct<storage::PeerReplies>(
+        finished_reply_box_lock_, finished_reply_box_, finished_peer_reply_);
 }
 
 PeerRequests* Nym::finished_request_box() const
 {
-    Lock lock(finished_request_box_lock_);
-
-    if (!finished_request_box_) {
-        finished_request_box_.reset(
-            new PeerRequests(driver_, finished_peer_request_));
-
-        if (!finished_request_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return finished_request_box_.get();
+    return construct<storage::PeerRequests>(
+        finished_request_box_lock_,
+        finished_request_box_,
+        finished_peer_request_);
 }
 
 const PeerRequests& Nym::FinishedRequestBox() const
@@ -233,40 +220,16 @@ const PeerReplies& Nym::FinishedReplyBox() const
 
 PeerReplies* Nym::incoming_reply_box() const
 {
-    Lock lock(incoming_reply_box_lock_);
-
-    if (!incoming_reply_box_) {
-        incoming_reply_box_.reset(
-            new PeerReplies(driver_, incoming_peer_reply_));
-
-        if (!incoming_reply_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return incoming_reply_box_.get();
+    return construct<storage::PeerReplies>(
+        incoming_reply_box_lock_, incoming_reply_box_, incoming_peer_reply_);
 }
 
 PeerRequests* Nym::incoming_request_box() const
 {
-    Lock lock(incoming_request_box_lock_);
-
-    if (!incoming_request_box_) {
-        incoming_request_box_.reset(
-            new PeerRequests(driver_, incoming_peer_request_));
-
-        if (!incoming_request_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return incoming_request_box_.get();
+    return construct<storage::PeerRequests>(
+        incoming_request_box_lock_,
+        incoming_request_box_,
+        incoming_peer_request_);
 }
 
 const PeerRequests& Nym::IncomingRequestBox() const
@@ -359,28 +322,17 @@ void Nym::init(const std::string& hash)
 
     // Fields added in version 6
     workflows_root_ = normalize_hash(serialized->paymentworkflow());
+
+    // Fields added in version 7
+    bip47_root_ = normalize_hash(serialized->bip47());
 }
 
-class Issuers* Nym::issuers() const
+storage::Issuers* Nym::issuers() const
 {
-    Lock lock(issuers_lock_);
-
-    if (false == bool(issuers_)) {
-        issuers_.reset(new class Issuers(driver_, issuers_root_));
-
-        if (false == bool(issuers_)) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-
-            OT_FAIL
-        }
-    }
-
-    lock.unlock();
-
-    return issuers_.get();
+    return construct<storage::Issuers>(issuers_lock_, issuers_, issuers_root_);
 }
 
-const class Issuers& Nym::Issuers() const { return *issuers(); }
+const storage::Issuers& Nym::Issuers() const { return *issuers(); }
 
 bool Nym::Load(
     const std::string& id,
@@ -420,7 +372,7 @@ bool Nym::Load(
     std::string& alias,
     const bool checking) const
 {
-    std::lock_guard<std::mutex> lock(write_lock_);
+    Lock lock(write_lock_);
 
     if (!check_hash(credentials_)) {
         if (!checking) {
@@ -444,38 +396,14 @@ bool Nym::Load(
 
 Mailbox* Nym::mail_inbox() const
 {
-    Lock lock(mail_inbox_lock_);
-
-    if (!mail_inbox_) {
-        mail_inbox_.reset(new Mailbox(driver_, mail_inbox_root_));
-
-        if (!mail_inbox_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return mail_inbox_.get();
+    return construct<storage::Mailbox>(
+        mail_inbox_lock_, mail_inbox_, mail_inbox_root_);
 }
 
 Mailbox* Nym::mail_outbox() const
 {
-    Lock lock(mail_outbox_lock_);
-
-    if (!mail_outbox_) {
-        mail_outbox_.reset(new Mailbox(driver_, mail_outbox_root_));
-
-        if (!mail_outbox_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return mail_outbox_.get();
+    return construct<storage::Mailbox>(
+        mail_outbox_lock_, mail_outbox_, mail_outbox_root_);
 }
 
 const Mailbox& Nym::MailInbox() const { return *mail_inbox(); }
@@ -500,186 +428,131 @@ bool Nym::Migrate(const opentxs::api::storage::Driver& to) const
     output &= contexts()->Migrate(to);
     output &= issuers()->Migrate(to);
     output &= workflows()->Migrate(to);
+    output &= bip47()->Migrate(to);
     output &= migrate(root_, to);
 
     return output;
 }
 
+Editor<storage::Bip47Channels> Nym::mutable_Bip47Channels()
+{
+    return editor<storage::Bip47Channels>(
+        bip47_root_, bip47_lock_, &Nym::bip47);
+}
+
 Editor<PeerRequests> Nym::mutable_SentRequestBox()
 {
-    std::function<void(PeerRequests*, Lock&)> callback =
-        [&](PeerRequests* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::SENTPEERREQUEST);
-    };
-
-    return Editor<PeerRequests>(write_lock_, sent_request_box(), callback);
+    return editor<storage::PeerRequests>(
+        sent_peer_request_, sent_request_box_lock_, &Nym::sent_request_box);
 }
 
 Editor<PeerRequests> Nym::mutable_IncomingRequestBox()
 {
-    std::function<void(PeerRequests*, Lock&)> callback =
-        [&](PeerRequests* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::INCOMINGPEERREQUEST);
-    };
-
-    return Editor<PeerRequests>(write_lock_, incoming_request_box(), callback);
+    return editor<storage::PeerRequests>(
+        incoming_peer_request_,
+        incoming_request_box_lock_,
+        &Nym::incoming_request_box);
 }
 
 Editor<PeerReplies> Nym::mutable_SentReplyBox()
 {
-    std::function<void(PeerReplies*, Lock&)> callback =
-        [&](PeerReplies* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::SENTPEERREPLY);
-    };
-
-    return Editor<PeerReplies>(write_lock_, sent_reply_box(), callback);
+    return editor<storage::PeerReplies>(
+        sent_peer_reply_, sent_reply_box_lock_, &Nym::sent_reply_box);
 }
 
 Editor<PeerReplies> Nym::mutable_IncomingReplyBox()
 {
-    std::function<void(PeerReplies*, Lock&)> callback =
-        [&](PeerReplies* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::INCOMINGPEERREPLY);
-    };
-
-    return Editor<PeerReplies>(write_lock_, incoming_reply_box(), callback);
+    return editor<storage::PeerReplies>(
+        incoming_peer_reply_,
+        incoming_reply_box_lock_,
+        &Nym::incoming_reply_box);
 }
 
 Editor<PeerRequests> Nym::mutable_FinishedRequestBox()
 {
-    std::function<void(PeerRequests*, Lock&)> callback =
-        [&](PeerRequests* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::FINISHEDPEERREQUEST);
-    };
-
-    return Editor<PeerRequests>(write_lock_, finished_request_box(), callback);
+    return editor<storage::PeerRequests>(
+        finished_peer_request_,
+        finished_request_box_lock_,
+        &Nym::finished_request_box);
 }
 
 Editor<PeerReplies> Nym::mutable_FinishedReplyBox()
 {
-    std::function<void(PeerReplies*, Lock&)> callback =
-        [&](PeerReplies* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::FINISHEDPEERREPLY);
-    };
-
-    return Editor<PeerReplies>(write_lock_, finished_reply_box(), callback);
+    return editor<storage::PeerReplies>(
+        finished_peer_reply_,
+        finished_reply_box_lock_,
+        &Nym::finished_reply_box);
 }
 
 Editor<PeerRequests> Nym::mutable_ProcessedRequestBox()
 {
-    std::function<void(PeerRequests*, Lock&)> callback =
-        [&](PeerRequests* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::PROCESSEDPEERREQUEST);
-    };
-
-    return Editor<PeerRequests>(write_lock_, processed_request_box(), callback);
+    return editor<storage::PeerRequests>(
+        processed_peer_request_,
+        processed_request_box_lock_,
+        &Nym::processed_request_box);
 }
 
 Editor<PeerReplies> Nym::mutable_ProcessedReplyBox()
 {
-    std::function<void(PeerReplies*, Lock&)> callback =
-        [&](PeerReplies* in, Lock& lock) -> void {
-        this->save(in, lock, StorageBox::PROCESSEDPEERREPLY);
-    };
-
-    return Editor<PeerReplies>(write_lock_, processed_reply_box(), callback);
+    return editor<storage::PeerReplies>(
+        processed_peer_reply_,
+        processed_reply_box_lock_,
+        &Nym::processed_reply_box);
 }
 
 Editor<Mailbox> Nym::mutable_MailInbox()
 {
-    std::function<void(Mailbox*, Lock&)> callback = [&](Mailbox* in,
-                                                        Lock& lock) -> void {
-        this->save(in, lock, StorageBox::MAILINBOX);
-    };
-
-    return Editor<Mailbox>(write_lock_, mail_inbox(), callback);
+    return editor<storage::Mailbox>(
+        mail_inbox_root_, mail_inbox_lock_, &Nym::mail_inbox);
 }
 
 Editor<Mailbox> Nym::mutable_MailOutbox()
 {
-    std::function<void(Mailbox*, Lock&)> callback = [&](Mailbox* in,
-                                                        Lock& lock) -> void {
-        this->save(in, lock, StorageBox::MAILOUTBOX);
-    };
-
-    return Editor<Mailbox>(write_lock_, mail_outbox(), callback);
+    return editor<storage::Mailbox>(
+        mail_outbox_root_, mail_outbox_lock_, &Nym::mail_outbox);
 }
 
-Editor<class Threads> Nym::mutable_Threads()
+Editor<storage::Threads> Nym::mutable_Threads()
 {
-    std::function<void(class Threads*, Lock&)> callback =
-        [&](class Threads* in, Lock& lock) -> void { this->save(in, lock); };
-
-    return Editor<class Threads>(write_lock_, threads(), callback);
+    return editor<storage::Threads>(
+        threads_root_, threads_lock_, &Nym::threads);
 }
 
-Editor<class Contexts> Nym::mutable_Contexts()
+Editor<storage::Contexts> Nym::mutable_Contexts()
 {
-    std::function<void(class Contexts*, Lock&)> callback =
-        [&](class Contexts* in, Lock& lock) -> void { this->save(in, lock); };
-
-    return Editor<class Contexts>(write_lock_, contexts(), callback);
+    return editor<storage::Contexts>(
+        contexts_root_, contexts_lock_, &Nym::contexts);
 }
 
-Editor<class Issuers> Nym::mutable_Issuers()
+Editor<storage::Issuers> Nym::mutable_Issuers()
 {
-    std::function<void(class Issuers*, Lock&)> callback =
-        [&](class Issuers* in, Lock& lock) -> void { this->save(in, lock); };
-
-    return Editor<class Issuers>(write_lock_, issuers(), callback);
+    return editor<storage::Issuers>(
+        issuers_root_, issuers_lock_, &Nym::issuers);
 }
 
-Editor<class PaymentWorkflows> Nym::mutable_PaymentWorkflows()
+Editor<storage::PaymentWorkflows> Nym::mutable_PaymentWorkflows()
 {
-    std::function<void(class PaymentWorkflows*, Lock&)> callback =
-        [&](class PaymentWorkflows* in, Lock& lock) -> void {
-        this->save(in, lock);
-    };
-
-    return Editor<class PaymentWorkflows>(write_lock_, workflows(), callback);
+    return editor<storage::PaymentWorkflows>(
+        workflows_root_, workflows_lock_, &Nym::workflows);
 }
 
-const class PaymentWorkflows& Nym::PaymentWorkflows() const
+const storage::PaymentWorkflows& Nym::PaymentWorkflows() const
 {
     return *workflows();
 }
 
 PeerReplies* Nym::processed_reply_box() const
 {
-    Lock lock(processed_reply_box_lock_);
-
-    if (!processed_reply_box_) {
-        processed_reply_box_.reset(
-            new PeerReplies(driver_, processed_peer_reply_));
-
-        if (!processed_reply_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return processed_reply_box_.get();
+    return construct<storage::PeerReplies>(
+        processed_reply_box_lock_, processed_reply_box_, processed_peer_reply_);
 }
 
 PeerRequests* Nym::processed_request_box() const
 {
-    Lock lock(processed_request_box_lock_);
-
-    if (!processed_request_box_) {
-        processed_request_box_.reset(
-            new PeerRequests(driver_, processed_peer_request_));
-
-        if (!processed_request_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return processed_request_box_.get();
+    return construct<storage::PeerRequests>(
+        processed_request_box_lock_,
+        processed_request_box_,
+        processed_peer_request_);
 }
 
 const PeerRequests& Nym::ProcessedRequestBox() const
@@ -706,7 +579,12 @@ bool Nym::save(const Lock& lock) const
     return driver_.StoreProto(serialized, root_);
 }
 
-void Nym::save(PeerReplies* input, const Lock& lock, StorageBox type)
+template <typename O>
+void Nym::_save(
+    O* input,
+    const Lock& lock,
+    std::mutex& mutex,
+    std::string& root)
 {
     if (!verify_write_lock(lock)) {
         otErr << __FUNCTION__ << ": Lock failure." << std::endl;
@@ -718,247 +596,34 @@ void Nym::save(PeerReplies* input, const Lock& lock, StorageBox type)
         OT_FAIL;
     }
 
-    update_hash(type, input->Root());
+    Lock rootLock(mutex);
+    root = input->Root();
+    rootLock.unlock();
 
-    if (!save(lock)) {
+    if (false == save(lock)) {
         otErr << __FUNCTION__ << ": Save error" << std::endl;
         OT_FAIL;
     }
 }
 
-void Nym::save(PeerRequests* input, const Lock& lock, StorageBox type)
+storage::Threads* Nym::threads() const
 {
-    if (!verify_write_lock(lock)) {
-        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
-        OT_FAIL;
-    }
-
-    if (nullptr == input) {
-        otErr << __FUNCTION__ << ": Null target" << std::endl;
-        OT_FAIL;
-    }
-
-    update_hash(type, input->Root());
-
-    if (!save(lock)) {
-        otErr << __FUNCTION__ << ": Save error" << std::endl;
-        OT_FAIL;
-    }
+    return construct<storage::Threads>(
+        threads_lock_, threads_, threads_root_, *mail_inbox(), *mail_outbox());
 }
 
-void Nym::save(Mailbox* input, const Lock& lock, StorageBox type)
-{
-    if (!verify_write_lock(lock)) {
-        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
-        OT_FAIL;
-    }
-
-    if (nullptr == input) {
-        otErr << __FUNCTION__ << ": Null target" << std::endl;
-        OT_FAIL;
-    }
-
-    update_hash(type, input->Root());
-
-    if (!save(lock)) {
-        otErr << __FUNCTION__ << ": Save error" << std::endl;
-        OT_FAIL;
-    }
-}
-
-void Nym::save(class Threads* input, const Lock& lock)
-{
-    if (!verify_write_lock(lock)) {
-        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
-        OT_FAIL;
-    }
-
-    if (nullptr == input) {
-        otErr << __FUNCTION__ << ": Null target" << std::endl;
-        OT_FAIL;
-    }
-
-    if (mail_inbox_) {
-        update_hash(StorageBox::MAILINBOX, mail_inbox_->Root());
-    }
-
-    if (mail_outbox_) {
-        update_hash(StorageBox::MAILOUTBOX, mail_outbox_->Root());
-    }
-
-    threads_root_ = input->Root();
-
-    if (!save(lock)) {
-        otErr << __FUNCTION__ << ": Save error" << std::endl;
-        OT_FAIL;
-    }
-}
-
-void Nym::save(class Contexts* input, const Lock& lock)
-{
-    if (!verify_write_lock(lock)) {
-        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
-        OT_FAIL;
-    }
-
-    if (nullptr == input) {
-        otErr << __FUNCTION__ << ": Null target" << std::endl;
-        OT_FAIL;
-    }
-
-    contexts_root_ = input->Root();
-
-    if (!save(lock)) {
-        otErr << __FUNCTION__ << ": Save error" << std::endl;
-        OT_FAIL;
-    }
-}
-
-void Nym::save(class Issuers* input, const Lock& lock)
-{
-    if (!verify_write_lock(lock)) {
-        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
-        OT_FAIL;
-    }
-
-    if (nullptr == input) {
-        otErr << __FUNCTION__ << ": Null target" << std::endl;
-        OT_FAIL;
-    }
-
-    issuers_root_ = input->Root();
-
-    if (!save(lock)) {
-        otErr << __FUNCTION__ << ": Save error" << std::endl;
-        OT_FAIL;
-    }
-}
-
-void Nym::save(class PaymentWorkflows* input, const Lock& lock)
-{
-    if (!verify_write_lock(lock)) {
-        otErr << __FUNCTION__ << ": Lock failure." << std::endl;
-        OT_FAIL;
-    }
-
-    if (nullptr == input) {
-        otErr << __FUNCTION__ << ": Null target" << std::endl;
-        OT_FAIL;
-    }
-
-    workflows_root_ = input->Root();
-
-    if (!save(lock)) {
-        otErr << __FUNCTION__ << ": Save error" << std::endl;
-        OT_FAIL;
-    }
-}
-
-class Threads* Nym::threads() const
-{
-    Lock lock(threads_lock_);
-
-    if (!threads_) {
-        threads_.reset(new class Threads(
-            driver_, threads_root_, *mail_inbox(), *mail_outbox()));
-
-        if (!threads_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return threads_.get();
-}
-
-const class Threads& Nym::Threads() const { return *threads(); }
-
-void Nym::update_hash(const StorageBox type, const std::string& root)
-{
-    switch (type) {
-        case StorageBox::SENTPEERREQUEST: {
-            std::lock_guard<std::mutex> lock(sent_request_box_lock_);
-            sent_peer_request_ = root;
-        } break;
-        case StorageBox::INCOMINGPEERREQUEST: {
-            std::lock_guard<std::mutex> lock(incoming_request_box_lock_);
-            incoming_peer_request_ = root;
-        } break;
-        case StorageBox::SENTPEERREPLY: {
-            std::lock_guard<std::mutex> lock(sent_reply_box_lock_);
-            sent_peer_reply_ = root;
-        } break;
-        case StorageBox::INCOMINGPEERREPLY: {
-            std::lock_guard<std::mutex> lock(incoming_reply_box_lock_);
-            incoming_peer_reply_ = root;
-        } break;
-        case StorageBox::FINISHEDPEERREQUEST: {
-            std::lock_guard<std::mutex> lock(finished_request_box_lock_);
-            finished_peer_request_ = root;
-        } break;
-        case StorageBox::FINISHEDPEERREPLY: {
-            std::lock_guard<std::mutex> lock(finished_reply_box_lock_);
-            finished_peer_reply_ = root;
-        } break;
-        case StorageBox::PROCESSEDPEERREQUEST: {
-            std::lock_guard<std::mutex> lock(finished_reply_box_lock_);
-            processed_peer_request_ = root;
-        } break;
-        case StorageBox::PROCESSEDPEERREPLY: {
-            std::lock_guard<std::mutex> lock(processed_reply_box_lock_);
-            processed_peer_reply_ = root;
-        } break;
-        case StorageBox::MAILINBOX: {
-            std::lock_guard<std::mutex> lock(mail_inbox_lock_);
-            mail_inbox_root_ = root;
-        } break;
-        case StorageBox::MAILOUTBOX: {
-            std::lock_guard<std::mutex> lock(mail_outbox_lock_);
-            mail_outbox_root_ = root;
-        } break;
-        default: {
-            otErr << __FUNCTION__ << ": Unknown box" << std::endl;
-            OT_FAIL;
-        }
-    }
-}
+const storage::Threads& Nym::Threads() const { return *threads(); }
 
 PeerReplies* Nym::sent_reply_box() const
 {
-    Lock lock(sent_reply_box_lock_);
-
-    if (!sent_reply_box_) {
-        sent_reply_box_.reset(new PeerReplies(driver_, sent_peer_reply_));
-
-        if (!sent_reply_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return sent_reply_box_.get();
+    return construct<storage::PeerReplies>(
+        sent_reply_box_lock_, sent_reply_box_, sent_peer_reply_);
 }
 
 PeerRequests* Nym::sent_request_box() const
 {
-    Lock lock(sent_request_box_lock_);
-
-    if (!sent_request_box_) {
-        sent_request_box_.reset(new PeerRequests(driver_, sent_peer_request_));
-
-        if (!sent_request_box_) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-            OT_FAIL;
-        }
-    }
-
-    lock.unlock();
-
-    return sent_request_box_.get();
+    return construct<storage::PeerRequests>(
+        sent_request_box_lock_, sent_request_box_, sent_peer_request_);
 }
 
 const PeerRequests& Nym::SentRequestBox() const { return *sent_request_box(); }
@@ -1038,13 +703,14 @@ proto::StorageNym Nym::serialize() const
 
     serialized.set_issuers(issuers_root_);
     serialized.set_paymentworkflow(workflows_root_);
+    serialized.set_bip47(bip47_root_);
 
     return serialized;
 }
 
 bool Nym::SetAlias(const std::string& alias)
 {
-    std::lock_guard<std::mutex> lock(write_lock_);
+    Lock lock(write_lock_);
 
     alias_ = alias;
 
@@ -1153,23 +819,10 @@ bool Nym::Store(
     return save(lock);
 }
 
-class PaymentWorkflows* Nym::workflows() const
+storage::PaymentWorkflows* Nym::workflows() const
 {
-    Lock lock(workflows_lock_);
-
-    if (false == bool(workflows_)) {
-        workflows_.reset(new class PaymentWorkflows(driver_, workflows_root_));
-
-        if (false == bool(workflows_)) {
-            otErr << __FUNCTION__ << ": Unable to instantiate." << std::endl;
-
-            OT_FAIL
-        }
-    }
-
-    lock.unlock();
-
-    return workflows_.get();
+    return construct<storage::PaymentWorkflows>(
+        workflows_lock_, workflows_, workflows_root_);
 }
 
 Nym::~Nym() {}
