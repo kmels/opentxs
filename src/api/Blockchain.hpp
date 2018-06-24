@@ -57,20 +57,46 @@ public:
         const Identifier& accountID,
         const std::string& label = "",
         const BIP44Chain chain = EXTERNAL_CHAIN) const override;
+    std::unique_ptr<proto::Bip47Address> AllocatePaycodeAddress(
+        const Identifier& nymID,
+        const Identifier& channelID,
+        const bool incoming) const override;
     bool AssignAddress(
         const Identifier& nymID,
         const Identifier& accountID,
         const std::uint32_t index,
         const Identifier& contactID,
         const BIP44Chain chain = EXTERNAL_CHAIN) const override;
+    OTIdentifier CreatePaycodeChannel(
+        const Identifier& nymID,
+        const PaymentCode& localPaymentCode,
+        const Identifier& contactID,
+        const PaymentCode& remotePaymentCode,
+        const proto::ContactItemType chain,
+        const std::string& incomingNotification,
+        const std::string& outgoingNotification,
+        const std::uint32_t lookahead = DEFAULT_BIP47_LOOKAHEAD) const override;
     std::unique_ptr<proto::Bip44Address> LoadAddress(
         const Identifier& nymID,
         const Identifier& accountID,
         const std::uint32_t index,
         const BIP44Chain chain) const override;
+    std::unique_ptr<proto::Bip47Address> LoadPaycodeAddress(
+        const Identifier& nymID,
+        const Identifier& channelID,
+        const std::uint32_t index,
+        const bool incoming) const override;
+    std::pair<OTIdentifier, OTIdentifier> LookupChannelByAddress(
+        const std::string& address) const override;
     OTIdentifier NewAccount(
         const Identifier& nymID,
         const BlockchainAccountType standard,
+        const proto::ContactItemType type) const override;
+    std::shared_ptr<proto::Bip47Channel> PaycodeChannel(
+        const Identifier& nymID,
+        const Identifier& channelID) const override;
+    std::set<OTIdentifier> PaycodeChannelList(
+        const Identifier& nymID,
         const proto::ContactItemType type) const override;
     bool StoreIncoming(
         const Identifier& nymID,
@@ -78,10 +104,20 @@ public:
         const std::uint32_t index,
         const BIP44Chain chain,
         const proto::BlockchainTransaction& transaction) const override;
+    bool StoreIncoming(
+        const Identifier& nymID,
+        const Identifier& channelID,
+        const std::int32_t index,
+        const proto::BlockchainTransaction& transaction) const override;
     bool StoreOutgoing(
         const Identifier& senderNymID,
         const Identifier& accountID,
         const Identifier& recipientContactID,
+        const proto::BlockchainTransaction& transaction) const override;
+    bool StoreOutgoing(
+        const Identifier& senderNymID,
+        const Identifier& channelID,
+        const std::int32_t index,
         const proto::BlockchainTransaction& transaction) const override;
     std::shared_ptr<proto::BlockchainTransaction> Transaction(
         const std::string& id) const override;
