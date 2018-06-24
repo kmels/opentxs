@@ -271,6 +271,16 @@ std::unique_ptr<proto::Bip44Address> Blockchain::AllocateAddress(
     return output;
 }
 
+std::unique_ptr<proto::Bip47Address> Blockchain::AllocatePaycodeAddress(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const Identifier& channelID,
+    [[maybe_unused]] const bool incoming) const
+{
+    // TODO
+
+    return {};
+}
+
 bool Blockchain::AssignAddress(
     const Identifier& nymID,
     const Identifier& accountID,
@@ -469,6 +479,21 @@ std::string Blockchain::CalculateAddress(
     return crypto_.Encode().IdentifierEncode(preimage);
 }
 
+OTIdentifier Blockchain::CreatePaycodeChannel(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const PaymentCode& localPaymentCode,
+    [[maybe_unused]] const Identifier& contactID,
+    [[maybe_unused]] const PaymentCode& remotePaymentCode,
+    [[maybe_unused]] const proto::ContactItemType chain,
+    [[maybe_unused]] const std::string& incomingNotification,
+    [[maybe_unused]] const std::string& outgoingNotification,
+    [[maybe_unused]] const std::uint32_t lookahead) const
+{
+    // TODO
+
+    return Identifier::Factory();
+}
+
 proto::Bip44Address& Blockchain::find_address(
     const std::uint32_t index,
     const BIP44Chain chain,
@@ -569,6 +594,25 @@ std::unique_ptr<proto::Bip44Address> Blockchain::LoadAddress(
     return output;
 }
 
+std::unique_ptr<proto::Bip47Address> Blockchain::LoadPaycodeAddress(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const Identifier& channelID,
+    [[maybe_unused]] const std::uint32_t index,
+    [[maybe_unused]] const bool incoming) const
+{
+    // TODO
+
+    return {};
+}
+
+std::pair<OTIdentifier, OTIdentifier> Blockchain::LookupChannelByAddress([
+    [maybe_unused]] const std::string& address) const
+{
+    // TODO
+
+    return {Identifier::Factory(), Identifier::Factory()};
+}
+
 bool Blockchain::move_transactions(
     const Identifier& nymID,
     const proto::Bip44Address& address,
@@ -664,6 +708,24 @@ OTIdentifier Blockchain::NewAccount(
     return Identifier::Factory();
 }
 
+std::shared_ptr<proto::Bip47Channel> Blockchain::PaycodeChannel(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const Identifier& channelID) const
+{
+    // TODO
+
+    return {};
+}
+
+std::set<OTIdentifier> Blockchain::PaycodeChannelList(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const proto::ContactItemType type) const
+{
+    // TODO
+
+    return {};
+}
+
 bool Blockchain::StoreIncoming(
     const Identifier& nymID,
     const Identifier& accountID,
@@ -732,6 +794,17 @@ bool Blockchain::StoreIncoming(
         nymID, contactID, StorageBox::INCOMINGBLOCKCHAIN, transaction);
 }
 
+bool Blockchain::StoreIncoming(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const Identifier& channelID,
+    [[maybe_unused]] const std::int32_t index,
+    [[maybe_unused]] const proto::BlockchainTransaction& transaction) const
+{
+    // TODO
+
+    return {};
+}
+
 bool Blockchain::StoreOutgoing(
     const Identifier& senderNymID,
     const Identifier& accountID,
@@ -778,6 +851,17 @@ bool Blockchain::StoreOutgoing(
         recipientContactID,
         StorageBox::OUTGOINGBLOCKCHAIN,
         transaction);
+}
+
+bool Blockchain::StoreOutgoing(
+    [[maybe_unused]] const Identifier& nymID,
+    [[maybe_unused]] const Identifier& channelID,
+    [[maybe_unused]] const std::int32_t index,
+    [[maybe_unused]] const proto::BlockchainTransaction& transaction) const
+{
+    // TODO
+
+    return {};
 }
 
 std::shared_ptr<proto::BlockchainTransaction> Blockchain::Transaction(
