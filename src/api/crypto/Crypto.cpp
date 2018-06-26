@@ -58,7 +58,6 @@
 #include "opentxs/core/crypto/SymmetricKey.hpp"
 #if OT_CRYPTO_USING_TREZOR
 #include "opentxs/core/crypto/OTCachedKey.hpp"
-#include "opentxs/core/crypto/TrezorCrypto.hpp"
 #endif
 #include "opentxs/core/util/Assert.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -75,6 +74,9 @@ extern "C" {
 #endif
 }
 
+#if OT_CRYPTO_USING_TREZOR
+#include "core/crypto/TrezorCrypto.hpp"
+#endif
 #include "Encode.hpp"
 #include "Hash.hpp"
 #include "Symmetric.hpp"
@@ -118,6 +120,15 @@ const Bip32& Crypto::BIP32() const
 
 #if OT_CRYPTO_WITH_BIP39
 const Bip39& Crypto::BIP39() const
+{
+    OT_ASSERT(nullptr != bitcoincrypto_);
+
+    return *bitcoincrypto_;
+}
+#endif
+
+#if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
+const api::crypto::Bip47& Crypto::BIP47() const
 {
     OT_ASSERT(nullptr != bitcoincrypto_);
 

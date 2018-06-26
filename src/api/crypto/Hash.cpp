@@ -48,11 +48,14 @@
 #include "opentxs/core/crypto/OpenSSL.hpp"
 #endif
 #include "opentxs/core/crypto/OTPassword.hpp"
-#include "opentxs/core/crypto/TrezorCrypto.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/OT.hpp"
+
+#if OT_CRYPTO_USING_TREZOR
+#include "core/crypto/TrezorCrypto.hpp"
+#endif
 
 #define OT_METHOD "opentxs::api::crypto::implementation::Hash::"
 

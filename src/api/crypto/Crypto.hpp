@@ -78,45 +78,47 @@ class Native;
 class Crypto : virtual public opentxs::api::Crypto
 {
 public:
-    EXPORT const OTCachedKey& DefaultKey() const override;
-    EXPORT Editor<OTCachedKey> mutable_DefaultKey() const override;
-    EXPORT const OTCachedKey& CachedKey(const Identifier& id) const override;
-    EXPORT const OTCachedKey& CachedKey(
-        const OTCachedKey& source) const override;
-    EXPORT const OTCachedKey& LoadDefaultKey(
+    const OTCachedKey& DefaultKey() const override;
+    Editor<OTCachedKey> mutable_DefaultKey() const override;
+    const OTCachedKey& CachedKey(const Identifier& id) const override;
+    const OTCachedKey& CachedKey(const OTCachedKey& source) const override;
+    const OTCachedKey& LoadDefaultKey(
         const OTASCIIArmor& serialized) const override;
-    EXPORT void SetTimeout(const std::chrono::seconds& timeout) const override;
-    EXPORT void SetSystemKeyring(const bool useKeyring) const override;
+    void SetTimeout(const std::chrono::seconds& timeout) const override;
+    void SetSystemKeyring(const bool useKeyring) const override;
 
     // Encoding function interface
-    EXPORT const crypto::Encode& Encode() const override;
+    const crypto::Encode& Encode() const override;
 
     // Hash function interface
-    EXPORT const crypto::Hash& Hash() const override;
+    const crypto::Hash& Hash() const override;
 
     // Utility class for misc OpenSSL-provided functions
-    EXPORT const crypto::Util& Util() const override;
+    const crypto::Util& Util() const override;
 
     // Asymmetric encryption engines
-    EXPORT const CryptoAsymmetric& ED25519() const override;
+    const CryptoAsymmetric& ED25519() const override;
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
-    EXPORT const CryptoAsymmetric& RSA() const override;
+    const CryptoAsymmetric& RSA() const override;
 #endif
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-    EXPORT const CryptoAsymmetric& SECP256K1() const override;
+    const CryptoAsymmetric& SECP256K1() const override;
 #endif
 
     // Symmetric encryption engines
-    EXPORT const crypto::Symmetric& Symmetric() const override;
+    const crypto::Symmetric& Symmetric() const override;
 
 #if OT_CRYPTO_SUPPORTED_ALGO_AES
-    EXPORT const CryptoSymmetric& AES() const override;
+    const CryptoSymmetric& AES() const override;
 #endif
 #if OT_CRYPTO_WITH_BIP32
-    EXPORT const Bip32& BIP32() const override;
+    const Bip32& BIP32() const override;
 #endif
 #if OT_CRYPTO_WITH_BIP39
-    EXPORT const Bip39& BIP39() const override;
+    const Bip39& BIP39() const override;
+#endif
+#if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
+    const api::crypto::Bip47& BIP47() const override;
 #endif
 
     std::unique_ptr<SymmetricKey> GetStorageKey(

@@ -51,9 +51,6 @@
 #include "opentxs/core/crypto/OTAsymmetricKey.hpp"
 #include "opentxs/core/crypto/OTPassword.hpp"
 #include "opentxs/core/crypto/OTPasswordData.hpp"
-#if OT_CRYPTO_USING_TREZOR
-#include "opentxs/core/crypto/TrezorCrypto.hpp"
-#endif
 #include "opentxs/core/util/Assert.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Log.hpp"
@@ -62,6 +59,10 @@
 
 #include <cstdint>
 #include <ostream>
+
+#if OT_CRYPTO_USING_TREZOR
+#include "core/crypto/TrezorCrypto.hpp"
+#endif
 
 namespace opentxs
 {

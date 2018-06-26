@@ -89,13 +89,13 @@ set(cxx-install-headers
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTSymmetricKey.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/PaymentCode.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/SymmetricKey.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/TrezorCrypto.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/VerificationCredential.hpp"
 )
 
 set(cxx-headers
   ${cxx-install-headers}
   PaymentCode.hpp
+  TrezorCrypto.hpp
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OpenSSL.hpp"
 )
 

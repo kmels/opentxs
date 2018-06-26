@@ -39,7 +39,7 @@
 #ifndef OPENTXS_CORE_CRYPTO_TREZOR_CRYPTO_HPP
 #define OPENTXS_CORE_CRYPTO_TREZOR_CRYPTO_HPP
 
-#include "opentxs/Forward.hpp"
+#include "Internal.hpp"
 
 #if OT_CRYPTO_USING_TREZOR
 #if OT_CRYPTO_WITH_BIP32
@@ -52,6 +52,10 @@
 #include "opentxs/core/crypto/CryptoEncoding.hpp"
 #include "opentxs/core/crypto/Ecdsa.hpp"
 #include "opentxs/Types.hpp"
+
+#if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
+#include "api/crypto/Bip47.hpp"
+#endif
 
 extern "C" {
 #include <trezor-crypto/base58.h>
@@ -67,13 +71,8 @@ extern "C" {
 
 namespace opentxs
 {
-class Libsecp256k1;
-class OTPassword;
-
 namespace api
 {
-class Native;
-
 namespace implementation
 {
 class Crypto;
@@ -82,15 +81,19 @@ class Crypto;
 
 class TrezorCrypto : public CryptoEncoding
 #if OT_CRYPTO_WITH_BIP39
-                     ,
+    ,
                      public Bip39
 #endif
 #if OT_CRYPTO_WITH_BIP32
-                     ,
+    ,
                      public Bip32
 #endif
+#if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
+    ,
+                     public api::crypto::implementation::Bip47
+#endif
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-                     ,
+    ,
                      public Ecdsa
 #endif
 {

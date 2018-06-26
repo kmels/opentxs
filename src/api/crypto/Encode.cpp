@@ -40,9 +40,6 @@
 
 #include "opentxs/core/crypto/CryptoEncoding.hpp"
 #include "opentxs/core/crypto/OTPassword.hpp"
-#if OT_CRYPTO_USING_TREZOR
-#include "opentxs/core/crypto/TrezorCrypto.hpp"
-#endif
 #include "opentxs/core/Data.hpp"
 
 #include "base64/base64.h"
@@ -50,6 +47,9 @@
 #include <iostream>
 #include <regex>
 
+#if OT_CRYPTO_USING_TREZOR
+#include "core/crypto/TrezorCrypto.hpp"
+#endif
 #include "Encode.hpp"
 
 namespace opentxs::api::crypto::implementation
