@@ -51,12 +51,12 @@ class Bip47 : virtual public crypto::Bip47
 {
 public:
     proto::AsymmetricKey IncomingPubkey(
-        const PaymentCode& local,
+        const Nym& local,
         const PaymentCode& remote,
         const proto::ContactItemType chain,
         const std::uint32_t index) const override;
     proto::AsymmetricKey OutgoingPubkey(
-        const PaymentCode& local,
+        const Nym& local,
         const PaymentCode& remote,
         const proto::ContactItemType chain,
         const std::uint32_t index) const override;

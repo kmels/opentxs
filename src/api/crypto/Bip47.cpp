@@ -46,7 +46,7 @@
 namespace opentxs::api::crypto::implementation
 {
 proto::AsymmetricKey Bip47::IncomingPubkey(
-    [[maybe_unused]] const PaymentCode& local,
+    [[maybe_unused]] const Nym& local,
     [[maybe_unused]] const PaymentCode& remote,
     [[maybe_unused]] const proto::ContactItemType chain,
     [[maybe_unused]] const std::uint32_t index) const
@@ -57,7 +57,7 @@ proto::AsymmetricKey Bip47::IncomingPubkey(
 }
 
 proto::AsymmetricKey Bip47::OutgoingPubkey(
-    [[maybe_unused]] const PaymentCode& local,
+    [[maybe_unused]] const Nym& local,
     [[maybe_unused]] const PaymentCode& remote,
     [[maybe_unused]] const proto::ContactItemType chain,
     [[maybe_unused]] const std::uint32_t index) const

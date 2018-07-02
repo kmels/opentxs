@@ -340,7 +340,8 @@ proto::StorageBip47Contexts Bip47Channels::serialize() const
         }
     }
 
-    for (const auto& [id, data] : channel_data_) {
+    for (const auto& it : channel_data_) {
+        const auto& data = it.second;
         const auto& [local, chain, contact, remote] = data;
         auto& index = *serialized.add_index();
         index.set_version(CHANNEL_INDEX_VERSION);
