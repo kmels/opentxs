@@ -83,6 +83,11 @@ public:
         std::string& fingerprint,
         const std::uint32_t nym) const;
     serializedAsymmetricKey GetStorageKey(std::string& seed) const;
+
+    virtual serializedAsymmetricKey MasterPubKeyFromBytes(
+        const EcdsaCurve& curve,
+        const uint8_t* pubkey,
+        const uint8_t* chain_code) const = 0;
 };
 }  // namespace opentxs
 

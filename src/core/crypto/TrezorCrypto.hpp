@@ -172,6 +172,10 @@ public:
         const EcdsaCurve& curve,
         const OTPassword& seed,
         proto::HDPath& path) const override;
+    serializedAsymmetricKey MasterPubKeyFromBytes(
+        const EcdsaCurve& curve,
+        const uint8_t* pubkey,
+        const uint8_t* chain_code) const override;
     bool RandomKeypair(OTPassword& privateKey, Data& publicKey) const override;
     std::string SeedToFingerprint(
         const EcdsaCurve& curve,
