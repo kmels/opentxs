@@ -72,6 +72,18 @@ public:
 protected:
     Bip47() = default;
 
+    virtual serializedAsymmetricKey Bip47HDKey(
+        std::string& fingerprint,
+        const std::uint32_t coin,
+        const std::uint32_t nym,
+        const std::uint32_t index,
+        const bool hardened_index) const = 0;
+
+    virtual serializedAsymmetricKey GetHDKey(
+        const EcdsaCurve& curve,
+        const OTPassword& seed,
+        proto::HDPath& path) const = 0;
+
 private:
     Bip47(const Bip47&) = delete;
     Bip47(Bip47&&) = delete;

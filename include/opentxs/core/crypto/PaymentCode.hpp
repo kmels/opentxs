@@ -43,6 +43,7 @@
 
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
 #include "opentxs/Proto.hpp"
+//#include "opentxs/core/crypto/OTAsymmetricKey.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -79,6 +80,7 @@ public:
         const Credential& credential,
         proto::Signature& sig,
         const OTPasswordData* pPWData = nullptr) const = 0;
+    EXPORT virtual const Data& DerivePubKeyAt(const std::uint32_t& i) const = 0;
 
     EXPORT virtual bool AddPrivateKeys(
         const std::string& seed,

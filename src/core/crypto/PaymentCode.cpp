@@ -70,6 +70,7 @@
 #include <ostream>
 #include <string>
 #include <tuple>
+#include "TrezorCrypto.hpp"
 
 template class opentxs::Pimpl<opentxs::PaymentCode>;
 
@@ -570,6 +571,29 @@ bool PaymentCode::Verify(
     signature.clear_signature();
 
     return pubkey_->Verify(proto::ProtoAsData(copy), sourceSignature);
+}
+
+/**  Returns the master pubkey on the ith derivation path (non-hardened)
+ */
+const opentxs::Data& PaymentCode::DerivePubKeyAt(const std::uint32_t& i) const
+{
+    OT_ASSERT(pubkey_ != nullptr);
+    OT_ASSERT(chain_code_);
+
+    auto existingKeyData = Data::Factory();
+    pubkey_->GetKey(existingKeyData);
+
+    serializedAsymmetricKey master_key =
+        OT::App().Crypto().BIP32().MasterPubKeyFromBytes(
+            EcdsaCurve::SECP256K1,
+            reinterpret_cast<const uint8_t*>(chain_code_->getMemory()),
+            reinterpret_cast<const uint8_t*>(existingKeyData->GetPointer()));
+
+    // unique_ptr<HDNode> master_node =
+    // int ckd_result = ::hdnode_public_ckd(node.get(), i);
+    // OT_ASSERT_MSG((1 == ckd_result), "Derivation of child off PubKey node
+    // failed.");
+    return Data::Factory();
 }
 
 bool PaymentCode::VerifyInternally() const

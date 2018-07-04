@@ -40,7 +40,8 @@
 #define OPENTXS_API_CRYPTO_BIP47_IMPLEMENTATION_HPP
 
 #include "opentxs/Forward.hpp"
-
+#include "opentxs/core/crypto/OTAsymmetricKey.hpp"
+#include "opentxs/core/crypto/AsymmetricKeyEC.hpp"
 #include "opentxs/api/crypto/Bip47.hpp"
 
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
@@ -65,6 +66,24 @@ public:
 
 protected:
     Bip47() = default;
+
+    serializedAsymmetricKey Bip47HDKey(
+        std::string& fingerprint,
+        const std::uint32_t coin,
+        const std::uint32_t nym,
+        const std::uint32_t index,
+        const bool hardened_index) const override;
+
+    virtual bool ECDH(
+        const Data& publicKey,
+        const OTPassword& privateKey,
+        OTPassword& secret) const = 0;
+    bool ScalarBaseMultiply(const OTPassword& privateKey, Data& publicKey);
+
+    virtual serializedAsymmetricKey GetHDKey(
+        const EcdsaCurve& curve,
+        const OTPassword& seed,
+        proto::HDPath& path) const = 0;
 
 private:
     Bip47(const Bip47&) = delete;

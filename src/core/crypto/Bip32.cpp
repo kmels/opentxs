@@ -101,6 +101,8 @@ std::string Bip32::Seed(const std::string& fingerprint) const
     return stream.str();
 }
 
+/* Returns the key at path: m/47'/0'/nym'
+ */
 serializedAsymmetricKey Bip32::GetPaymentCode(
     std::string& fingerprint,
     const std::uint32_t nym) const
