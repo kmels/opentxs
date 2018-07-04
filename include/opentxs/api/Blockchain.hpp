@@ -127,6 +127,14 @@ public:
         const std::string& incomingNotification,
         const std::string& outgoingNotification,
         const std::uint32_t lookahead = DEFAULT_BIP47_LOOKAHEAD) const = 0;
+    /** Maps the blockchain contact type belonging to the SECTION_CONTRACT to a
+     * BIP44 coin type
+     *
+     *  \params[in] type    A valid chain type represented by
+     * CONTACTSECTION_CONTRACT
+     *  \returns The BIP 44 coin type number that is convertable to int32_t
+     */
+    virtual Bip44Type GetBip44Type(const proto::ContactItemType type) const = 0;
     virtual std::unique_ptr<proto::Bip44Address> LoadAddress(
         const Identifier& nymID,
         const Identifier& accountID,

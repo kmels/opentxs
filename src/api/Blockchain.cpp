@@ -355,7 +355,7 @@ bool Blockchain::AssignAddress(
     return storage_.Store(sNymID, type, *account);
 }
 
-Bip44Type Blockchain::bip44_type(const proto::ContactItemType type) const
+Bip44Type Blockchain::GetBip44Type(const proto::ContactItemType type) const
 {
     switch (type) {
         case proto::CITEMTYPE_BTC: {
@@ -542,7 +542,7 @@ void Blockchain::init_path(
                 static_cast<std::uint32_t>(Bip43Purpose::HDWALLET) |
                 static_cast<std::uint32_t>(Bip32Child::HARDENED));
             path.add_child(
-                static_cast<std::uint32_t>(bip44_type(chain)) |
+                static_cast<std::uint32_t>(GetBip44Type(chain)) |
                 static_cast<std::uint32_t>(Bip32Child::HARDENED));
             path.add_child(account);
         } break;
