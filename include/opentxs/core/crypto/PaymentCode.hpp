@@ -80,7 +80,7 @@ public:
         const Credential& credential,
         proto::Signature& sig,
         const OTPasswordData* pPWData = nullptr) const = 0;
-    EXPORT virtual const Data& DerivePubKeyAt(const std::uint32_t& i) const = 0;
+    EXPORT virtual Data& DerivePubKeyAt(const std::uint32_t& i) const = 0;
 
     EXPORT virtual bool AddPrivateKeys(
         const std::string& seed,

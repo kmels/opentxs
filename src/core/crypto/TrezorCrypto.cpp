@@ -443,6 +443,7 @@ bool TrezorCrypto::ValidPrivateKey(const OTPassword& key) const
 #endif  // OT_CRYPTO_WITH_BIP32
 
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
+
 bool TrezorCrypto::ECDH(
     const Data& publicKey,
     const OTPassword& privateKey,
@@ -450,12 +451,12 @@ bool TrezorCrypto::ECDH(
 {
     OT_ASSERT(secp256k1_);
 
-    curve_point point;
+    curve_point pubkey_point;
 
     const bool havePublic = ecdsa_read_pubkey(
         secp256k1_->params,
         static_cast<const std::uint8_t*>(publicKey.GetPointer()),
-        &point);
+        &pubkey_point);
 
     if (!havePublic) {
         otWarn << OT_METHOD << __FUNCTION__ << ": Invalid public key."
@@ -464,15 +465,15 @@ bool TrezorCrypto::ECDH(
         return false;
     }
 
-    bignum256 scalar;
-    bn_read_be(privateKey.getMemory_uint8(), &scalar);
+    bignum256 private_scalar;
+    bn_read_be(privateKey.getMemory_uint8(), &private_scalar);
 
     curve_point sharedSecret;
-    point_multiply(secp256k1_->params, &scalar, &point, &sharedSecret);
+    point_multiply(
+        secp256k1_->params, &private_scalar, &pubkey_point, &sharedSecret);
 
     std::array<std::uint8_t, 32> output{};
     secret.setMemory(output.data(), sizeof(output));
-
     OT_ASSERT(32 == secret.getMemorySize());
 
     bn_write_be(
@@ -504,6 +505,62 @@ bool TrezorCrypto::ScalarBaseMultiply(
                  static_cast<const std::uint8_t*>(publicKey.GetPointer()),
                  &notUsed));
 }
+
+// Q = Q + P
+bool TrezorCrypto::AddSecp256k1(const OTPassword& P, OTPassword& Q) const
+{
+    OT_ASSERT(secp256k1_);
+
+    OT_ASSERT(ValidPrivateKey(P));
+    OT_ASSERT(ValidPrivateKey(Q));
+
+    bignum256 p, q;
+    bn_read_be(P.getMemory_uint8(), &p);
+    bn_read_be(P.getMemory_uint8(), &q);
+    bn_add(&p, &q);
+    bn_write_be(&q, static_cast<std::uint8_t*>(Q.getMemoryWritable()));
+    return IsSecp256k1(Q);
+}
+
+// Q = Q + P
+bool TrezorCrypto::AddSecp256k1(const Data& P, Data& Q) const
+{
+    OT_ASSERT(secp256k1_);
+    curve_point p, q;
+
+    const bool valid_P = ecdsa_read_pubkey(
+        secp256k1_->params,
+        static_cast<const std::uint8_t*>(P.GetPointer()),
+        &p);
+
+    const bool valid_Q = ecdsa_read_pubkey(
+        secp256k1_->params,
+        static_cast<const std::uint8_t*>(Q.GetPointer()),
+        &q);
+
+    if (!valid_P || !valid_Q) {
+        otWarn << OT_METHOD << __FUNCTION__ << ": Invalid public key."
+               << std::endl;
+
+        return false;
+    }
+
+    point_add(secp256k1_->params, &p, &q);
+
+    return ecdsa_read_pubkey(
+        secp256k1_->params,
+        static_cast<const std::uint8_t*>(Q.GetPointer()),
+        &q);
+}
+
+bool TrezorCrypto::IsSecp256k1(OTPassword& P) const
+{
+    OT_ASSERT(secp256k1_);
+    bignum256 p;
+    bn_read_be(P.getMemory_uint8(), &p);
+    return !bn_is_zero(&p) && bn_is_less(&p, &secp256k1_->params->order);
+}
+
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 
 std::string TrezorCrypto::Base58CheckEncode(

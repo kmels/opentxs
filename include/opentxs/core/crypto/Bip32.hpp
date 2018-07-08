@@ -51,6 +51,14 @@
 #include <cstdint>
 #include <string>
 
+extern "C" {
+#include <trezor-crypto/base58.h>
+#if OT_CRYPTO_WITH_BIP32
+#include <trezor-crypto/bip32.h>
+#endif
+#include <trezor-crypto/ecdsa.h>
+}
+
 namespace opentxs
 {
 class OTPassword;
@@ -88,6 +96,8 @@ public:
         const EcdsaCurve& curve,
         const uint8_t* pubkey,
         const uint8_t* chain_code) const = 0;
+    virtual std::unique_ptr<HDNode> SerializedToHDNode(
+        const proto::AsymmetricKey& serialized) const = 0;
 };
 }  // namespace opentxs
 

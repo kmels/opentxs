@@ -71,6 +71,7 @@
 #include <string>
 #include <tuple>
 #include "TrezorCrypto.hpp"
+#include <opentxs/core/crypto/Bip32.hpp>
 
 template class opentxs::Pimpl<opentxs::PaymentCode>;
 
@@ -575,7 +576,7 @@ bool PaymentCode::Verify(
 
 /**  Returns the master pubkey on the ith derivation path (non-hardened)
  */
-const opentxs::Data& PaymentCode::DerivePubKeyAt(const std::uint32_t& i) const
+opentxs::Data& PaymentCode::DerivePubKeyAt(const std::uint32_t& i) const
 {
     OT_ASSERT(pubkey_ != nullptr);
     OT_ASSERT(chain_code_);
@@ -589,11 +590,37 @@ const opentxs::Data& PaymentCode::DerivePubKeyAt(const std::uint32_t& i) const
             reinterpret_cast<const uint8_t*>(chain_code_->getMemory()),
             reinterpret_cast<const uint8_t*>(existingKeyData->GetPointer()));
 
-    // unique_ptr<HDNode> master_node =
+    OT_ASSERT(proto::KEYMODE_PUBLIC == (*master_key).mode());
+
+    serializedAsymmetricKey master_childkey =
+        OT::App().Crypto().BIP32().GetChild(*master_key, i);
+
+    // SerializedPaymentCode pcode = remote.Serialize();
+    // proto::AsymmetricKey xpub = *xpubKey;
+    // opentxs::AsymmetricKeyEC publicKey = new opentxs::AsymmetricKeyEC(xpub);
+    // const std::string& pubKey = pcode->key();
+    // const std::string& chainCode = pcode->chaincode();
+
+    /*
+    const Data& publicDHKey = Data::Factory();
+
+    if (!publicKey.GetKey(publicDHKey)) {
+        otErr << __FUNCTION__ << ": Failed to get public key." << std::endl;
+        return {};
+    }*/
+
+    // HDNode* node =
+    // OT::App().Crypto().BIP32().SerializedToHDNode(*master_childkey).get();
     // int ckd_result = ::hdnode_public_ckd(node.get(), i);
     // OT_ASSERT_MSG((1 == ckd_result), "Derivation of child off PubKey node
     // failed.");
-    return Data::Factory();
+
+    // auto node = InstantiateHDNode(curve, seed);
+
+    // return Data::Factory(
+    // static_cast<void*>(node->public_key), sizeof(node->public_key));
+    return Data::Factory(
+        master_childkey->key().c_str(), master_childkey->key().size());
 }
 
 bool PaymentCode::VerifyInternally() const

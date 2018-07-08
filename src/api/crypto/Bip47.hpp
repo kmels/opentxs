@@ -43,8 +43,8 @@
 #include "opentxs/core/crypto/OTAsymmetricKey.hpp"
 #include "opentxs/core/crypto/AsymmetricKeyEC.hpp"
 #include "opentxs/api/crypto/Bip47.hpp"
-
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
+#include <trezor-crypto/bip32.h>
 
 namespace opentxs::api::crypto::implementation
 {
@@ -67,25 +67,52 @@ public:
 protected:
     Bip47() = default;
 
+    virtual bool AddSecp256k1(const OTPassword& scalar1, OTPassword& scalar2)
+        const = 0;
+    virtual bool AddSecp256k1(const Data& curvepoint1, Data& curvepoint2)
+        const = 0;
+
     serializedAsymmetricKey Bip47HDKey(
         std::string& fingerprint,
         const std::uint32_t coin,
         const std::uint32_t nym,
         const std::uint32_t index,
-        const bool hardened_index) const override;
+        const bool hardened_index) const;
 
     virtual bool ECDH(
         const Data& publicKey,
         const OTPassword& privateKey,
         OTPassword& secret) const = 0;
-    bool ScalarBaseMultiply(const OTPassword& privateKey, Data& publicKey);
+
+    virtual bool IsSecp256k1(OTPassword& P) const = 0;
 
     virtual serializedAsymmetricKey GetHDKey(
         const EcdsaCurve& curve,
         const OTPassword& seed,
         proto::HDPath& path) const = 0;
 
+    virtual bool ScalarBaseMultiply(
+        const OTPassword& privateKey,
+        Data& publicKey) const = 0;
+    virtual bool ValidPrivateKey(const OTPassword& key) const = 0;
+
 private:
+    using Bip47Identity =
+        std::tuple<bool, std::uint32_t, std::uint32_t, std::string>;
+    /* success, nym, coin, fingerprint */
+    using HashedSecret =
+        std::tuple<bool, OTPassword&, OTPassword&, Data&, std::string>;
+    /* success, secret, designated private key, designated public key,
+       fingerprint */
+
+    static Bip47Identity get_account(
+        const Nym& local,
+        const proto::ContactItemType chain);
+    HashedSecret shared_secret(
+        const Nym& local,
+        const PaymentCode& remote,
+        const proto::ContactItemType chain,
+        const std::uint32_t index) const;
     Bip47(const Bip47&) = delete;
     Bip47(Bip47&&) = delete;
     Bip47& operator=(const Bip47&) = delete;

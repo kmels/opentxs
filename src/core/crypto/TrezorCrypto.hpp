@@ -139,7 +139,7 @@ private:
         const OTPassword& seed,
         proto::HDPath& path) const;
     std::unique_ptr<HDNode> SerializedToHDNode(
-        const proto::AsymmetricKey& serialized) const;
+        const proto::AsymmetricKey& serialized) const override;
     serializedAsymmetricKey HDNodeToSerialized(
         const proto::AsymmetricKeyType& type,
         const HDNode& node,
@@ -148,12 +148,18 @@ private:
 #endif
 
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
+
     bool ECDH(
         const Data& publicKey,
         const OTPassword& privateKey,
         OTPassword& secret) const override;
     bool ScalarBaseMultiply(const OTPassword& privateKey, Data& publicKey)
         const override;
+
+    bool AddSecp256k1(const OTPassword& key1, OTPassword& key2) const override;
+    bool AddSecp256k1(const Data& key1, Data& result) const override;
+    bool IsSecp256k1(OTPassword& P) const override;
+
 #endif
 
     TrezorCrypto(api::Native& native);

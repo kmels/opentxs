@@ -65,8 +65,8 @@ public:
 
     bool AddPrivateKeys(const std::string& seed, const std::uint32_t index)
         override;
-    const Data& DerivePubKeyAt(const std::uint32_t& i) const override;
-  
+    Data& DerivePubKeyAt(const std::uint32_t& i) const override;
+
     ~PaymentCode() = default;
 
 private:
