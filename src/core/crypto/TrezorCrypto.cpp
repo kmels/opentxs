@@ -532,6 +532,7 @@ bool TrezorCrypto::AddSecp256k1(const OTPassword& P, OTPassword& Q) const
     bn_read_be(P.getMemory_uint8(), &q);
     bn_add(&p, &q);
     bn_write_be(&q, static_cast<std::uint8_t*>(Q.getMemoryWritable()));
+    OT_ASSERT(ValidPrivateKey(Q));
     return IsSecp256k1(Q);
 }
 
@@ -564,12 +565,19 @@ bool TrezorCrypto::AddSecp256k1(const Data& P, Data& Q) const
     Q.Assign(blank.data(), blank.size());
     OT_ASSERT(secp256k1_);
 
-    return (
-        1 ==
-        ecdsa_compress_public_key33(
-            secp256k1_->params,
-            &q,
-            static_cast<std::uint8_t*>(const_cast<void*>(Q.GetPointer()))));
+    ecdsa_compress_public_key33(
+        secp256k1_->params,
+        &q,
+        static_cast<std::uint8_t*>(const_cast<void*>(Q.GetPointer())));
+
+    curve_point pubkey_point;
+
+    const bool havePublic = ecdsa_read_pubkey(
+        secp256k1_->params,
+        static_cast<const std::uint8_t*>(Q.GetPointer()),
+        &pubkey_point);
+
+    return havePublic;
 }
 
 bool TrezorCrypto::IsSecp256k1(OTPassword& P) const

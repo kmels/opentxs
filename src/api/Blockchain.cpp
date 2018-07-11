@@ -45,6 +45,7 @@
 #include "opentxs/api/crypto/Hash.hpp"
 #include "opentxs/api/Activity.hpp"
 #include "opentxs/api/Blockchain.hpp"
+#include "opentxs/api/crypto/Bip47.hpp"
 #include "opentxs/core/crypto/AsymmetricKeySecp256k1.hpp"
 #include "opentxs/core/crypto/Bip32.hpp"
 #include "opentxs/core/crypto/OTAsymmetricKey.hpp"
@@ -75,7 +76,6 @@
 #define BLOCKCHAIN_VERSION 1
 #define ACCOUNT_VERSION 1
 #define PATH_VERSION 1
-#define COMPRESSED_PUBKEY_SIZE 33
 #define BITCOIN_PUBKEY_HASH 0x0
 #define BITCOIN_TESTNET_HASH 0x6f
 #define LITECOIN_PUBKEY_HASH 0x30
@@ -418,70 +418,7 @@ std::string Blockchain::calculate_address(
         return {};
     }
 
-    std::unique_ptr<OTAsymmetricKey> key{nullptr};
-    std::unique_ptr<AsymmetricKeySecp256k1> ecKey{nullptr};
-    key.reset(OTAsymmetricKey::KeyFactory(*serialized));
-
-    if (false == bool(key)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Unable to instantiate key."
-              << std::endl;
-
-        return {};
-    }
-
-    ecKey.reset(dynamic_cast<AsymmetricKeySecp256k1*>(key.release()));
-
-    if (false == bool(ecKey)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Incorrect key type."
-              << std::endl;
-
-        return {};
-    }
-
-    auto pubkey = Data::Factory();
-
-    if (false == ecKey->GetPublicKey(pubkey)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Unable to extract public key."
-              << std::endl;
-
-        return {};
-    }
-
-    if (COMPRESSED_PUBKEY_SIZE != pubkey->GetSize()) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Incorrect pubkey size ("
-              << pubkey->GetSize() << ")." << std::endl;
-
-        return {};
-    }
-
-    auto sha256 = Data::Factory();
-    auto ripemd160 = Data::Factory();
-    auto pubkeyHash = Data::Factory();
-
-    if (!crypto_.Hash().Digest(proto::HASHTYPE_SHA256, pubkey, sha256)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate sha256."
-              << std::endl;
-
-        return {};
-    }
-
-    if (!crypto_.Hash().Digest(proto::HASHTYPE_RIMEMD160, sha256, pubkeyHash)) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate rimemd160."
-              << std::endl;
-
-        return {};
-    }
-
-    const auto prefix = GetAddressPrefix(account.type());
-    auto preimage = Data::Factory(&prefix, sizeof(prefix));
-
-    OT_ASSERT(1 == preimage->GetSize());
-
-    preimage += pubkeyHash;
-
-    OT_ASSERT(21 == preimage->GetSize());
-
-    return crypto_.Encode().IdentifierEncode(preimage);
+    return crypto_.BIP47().PubKeyAddress(*serialized, account.type());
 }
 
 OTIdentifier Blockchain::CreatePaycodeChannel(
