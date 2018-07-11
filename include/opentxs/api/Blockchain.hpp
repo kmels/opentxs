@@ -127,8 +127,11 @@ public:
         const std::string& incomingNotification,
         const std::string& outgoingNotification,
         const std::uint32_t lookahead = DEFAULT_BIP47_LOOKAHEAD) const = 0;
-    /** Maps the blockchain contact type belonging to the SECTION_CONTRACT to a
-     * BIP44 coin type
+    /* Maps the blockchain type to the prefix of its pretty printed addresses
+     */
+    virtual std::uint8_t GetAddressPrefix(
+        const proto::ContactItemType type) const = 0;
+    /** Maps the blockchain type to a BIP44 coin type
      *
      *  \params[in] type    A valid chain type represented by
      * CONTACTSECTION_CONTRACT

@@ -56,6 +56,9 @@ namespace crypto
 class Bip47
 {
 public:
+    EXPORT virtual std::string PubKeyAddress(
+        const proto::AsymmetricKey key,
+        const proto::ContactItemType chain) const = 0;
     EXPORT virtual proto::AsymmetricKey IncomingPubkey(
         const Nym& local,
         const PaymentCode& remote,
@@ -66,7 +69,9 @@ public:
         const PaymentCode& remote,
         const proto::ContactItemType chain,
         const std::uint32_t index) const = 0;
-
+    EXPORT virtual std::string NotificationAddress(
+        const Nym& local,
+        proto::ContactItemType chain) const = 0;
     EXPORT virtual ~Bip47() = default;
 
 protected:

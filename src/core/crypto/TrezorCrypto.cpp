@@ -65,6 +65,16 @@ extern "C" {
 #endif
 #endif
 #include <trezor-crypto/ripemd160.h>
+
+void ecdsa_compress_public_key33(
+    const ecdsa_curve* curve,
+    const curve_point* P,
+    uint8_t* pub_key)
+{
+    pub_key[0] = 0x02 | (P->y.val[0] & 0x01);
+    bn_write_be(&P->x, pub_key + 1);
+    memset(&P, 0, sizeof(P));
+}
 }
 
 #include <cstdint>
@@ -451,6 +461,12 @@ bool TrezorCrypto::ECDH(
 {
     OT_ASSERT(secp256k1_);
 
+    if (publicKey.IsEmpty()) {
+        otWarn << OT_METHOD << __FUNCTION__ << ": Public key is empty."
+               << std::endl;
+        return false;
+    }
+
     curve_point pubkey_point;
 
     const bool havePublic = ecdsa_read_pubkey(
@@ -489,14 +505,11 @@ bool TrezorCrypto::ScalarBaseMultiply(
 {
     std::array<std::uint8_t, 33> blank{};
     publicKey.Assign(blank.data(), blank.size());
-
     OT_ASSERT(secp256k1_);
-
     ecdsa_get_public_key33(
         secp256k1_->params,
         privateKey.getMemory_uint8(),
         static_cast<std::uint8_t*>(const_cast<void*>(publicKey.GetPointer())));
-
     curve_point notUsed;
 
     return (
@@ -547,10 +560,16 @@ bool TrezorCrypto::AddSecp256k1(const Data& P, Data& Q) const
 
     point_add(secp256k1_->params, &p, &q);
 
-    return ecdsa_read_pubkey(
-        secp256k1_->params,
-        static_cast<const std::uint8_t*>(Q.GetPointer()),
-        &q);
+    std::array<std::uint8_t, 33> blank{};
+    Q.Assign(blank.data(), blank.size());
+    OT_ASSERT(secp256k1_);
+
+    return (
+        1 ==
+        ecdsa_compress_public_key33(
+            secp256k1_->params,
+            &q,
+            static_cast<std::uint8_t*>(const_cast<void*>(Q.GetPointer()))));
 }
 
 bool TrezorCrypto::IsSecp256k1(OTPassword& P) const

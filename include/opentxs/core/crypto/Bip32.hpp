@@ -98,6 +98,10 @@ public:
         const uint8_t* chain_code) const = 0;
     virtual std::unique_ptr<HDNode> SerializedToHDNode(
         const proto::AsymmetricKey& serialized) const = 0;
+
+    virtual bool ScalarBaseMultiply(
+        const OTPassword& privateKey,
+        Data& publicKey) const = 0;
 };
 }  // namespace opentxs
 

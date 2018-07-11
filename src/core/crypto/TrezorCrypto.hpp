@@ -63,6 +63,11 @@ extern "C" {
 #include <trezor-crypto/bip32.h>
 #endif
 #include <trezor-crypto/ecdsa.h>
+
+void ecdsa_compress_public_key33(
+    const ecdsa_curve* curve,
+    const curve_point* P,
+    uint8_t* pub_key);
 }
 
 #include <cstdint>
@@ -157,7 +162,7 @@ private:
         const override;
 
     bool AddSecp256k1(const OTPassword& key1, OTPassword& key2) const override;
-    bool AddSecp256k1(const Data& key1, Data& result) const override;
+    bool AddSecp256k1(const Data& P, Data& Q) const override;
     bool IsSecp256k1(OTPassword& P) const override;
 
 #endif

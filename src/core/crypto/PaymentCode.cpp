@@ -46,6 +46,7 @@
 #include "opentxs/api/Native.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/crypto/Bip32.hpp"
+#include "opentxs/core/crypto/OTAsymmetricKey.hpp"
 #include "opentxs/core/crypto/AsymmetricKeyEC.hpp"
 #include "opentxs/core/crypto/AsymmetricKeySecp256k1.hpp"
 #include "opentxs/core/crypto/Credential.hpp"
@@ -217,9 +218,15 @@ PaymentCode::PaymentCode(
 {
     auto [success, chainCode, publicKey] = make_key(seed_, index_);
 
+    OT_ASSERT(success);
+
     if (success) {
         chain_code_.swap(chainCode);
         ConstructKey(publicKey);
+        OT_ASSERT(pubkey_);
+    } else {
+        otErr << OT_METHOD << __FUNCTION__
+              << ": Failed to generate extended private key" << std::endl;
     }
 }
 
@@ -331,7 +338,9 @@ void PaymentCode::ConstructKey(const opentxs::Data& pubkey)
     AsymmetricKeyEC* key = dynamic_cast<AsymmetricKeySecp256k1*>(
         OTAsymmetricKey::KeyFactory(newKey));
 
+    OT_ASSERT(nullptr != key);
     if (nullptr != key) { pubkey_.reset(key); }
+    OT_ASSERT(pubkey_ != nullptr);
 }
 
 const OTIdentifier PaymentCode::ID() const
@@ -576,38 +585,34 @@ bool PaymentCode::Verify(
 
 /**  Returns the master pubkey on the ith derivation path (non-hardened)
  */
-opentxs::Data& PaymentCode::DerivePubKeyAt(const std::uint32_t& i) const
+std::shared_ptr<proto::AsymmetricKey> PaymentCode::DerivePubKeyAt(
+    const uint32_t& i) const
 {
     OT_ASSERT(pubkey_ != nullptr);
     OT_ASSERT(chain_code_);
 
     auto existingKeyData = Data::Factory();
-    pubkey_->GetKey(existingKeyData);
+    OT_ASSERT(pubkey_->GetKey(existingKeyData));
 
     serializedAsymmetricKey master_key =
         OT::App().Crypto().BIP32().MasterPubKeyFromBytes(
             EcdsaCurve::SECP256K1,
-            reinterpret_cast<const uint8_t*>(chain_code_->getMemory()),
-            reinterpret_cast<const uint8_t*>(existingKeyData->GetPointer()));
+            reinterpret_cast<const uint8_t*>(existingKeyData->GetPointer()),
+            reinterpret_cast<const uint8_t*>(chain_code_->getMemory()));
 
-    OT_ASSERT(proto::KEYMODE_PUBLIC == (*master_key).mode());
+    OT_ASSERT(proto::KEYMODE_PUBLIC == master_key->mode());
 
-    serializedAsymmetricKey master_childkey =
-        OT::App().Crypto().BIP32().GetChild(*master_key, i);
+    serializedAsymmetricKey master_childkey = master_key;
+
+    OT::App().Crypto().BIP32().GetChild(*master_key, i);
+
+    // OTData ProtoAsData(const T& serialized)
 
     // SerializedPaymentCode pcode = remote.Serialize();
-    // proto::AsymmetricKey xpub = *xpubKey;
+    // proto::AsymmetricKey xpub = *master_childkey;
     // opentxs::AsymmetricKeyEC publicKey = new opentxs::AsymmetricKeyEC(xpub);
     // const std::string& pubKey = pcode->key();
     // const std::string& chainCode = pcode->chaincode();
-
-    /*
-    const Data& publicDHKey = Data::Factory();
-
-    if (!publicKey.GetKey(publicDHKey)) {
-        otErr << __FUNCTION__ << ": Failed to get public key." << std::endl;
-        return {};
-    }*/
 
     // HDNode* node =
     // OT::App().Crypto().BIP32().SerializedToHDNode(*master_childkey).get();
@@ -617,10 +622,11 @@ opentxs::Data& PaymentCode::DerivePubKeyAt(const std::uint32_t& i) const
 
     // auto node = InstantiateHDNode(curve, seed);
 
-    // return Data::Factory(
-    // static_cast<void*>(node->public_key), sizeof(node->public_key));
-    return Data::Factory(
+    OTData B = Data::Factory(
         master_childkey->key().c_str(), master_childkey->key().size());
+    OT_ASSERT(!B->IsEmpty());
+
+    return master_childkey;
 }
 
 bool PaymentCode::VerifyInternally() const

@@ -40,6 +40,7 @@
 #define OPENTXS_CORE_CRYPTO_PAYMENTCODE_IMPLEMENTATION_HPP
 
 #include "opentxs/Forward.hpp"
+#include "opentxs/core/crypto/CryptoAsymmetric.hpp"
 
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
 #include "opentxs/core/crypto/PaymentCode.hpp"
@@ -65,8 +66,8 @@ public:
 
     bool AddPrivateKeys(const std::string& seed, const std::uint32_t index)
         override;
-    Data& DerivePubKeyAt(const std::uint32_t& i) const override;
-
+    std::shared_ptr<proto::AsymmetricKey> DerivePubKeyAt(
+        const std::uint32_t& i) const override;
     ~PaymentCode() = default;
 
 private:

@@ -167,7 +167,8 @@ proto::Bip44Address& Blockchain::add_address(
     }
 }
 
-std::uint8_t Blockchain::address_prefix(const proto::ContactItemType type) const
+std::uint8_t Blockchain::GetAddressPrefix(
+    const proto::ContactItemType type) const
 {
     switch (type) {
         case proto::CITEMTYPE_BCH:
@@ -408,7 +409,6 @@ std::string Blockchain::calculate_address(
     const std::uint32_t index) const
 {
     const auto& path = account.path();
-    auto fingerprint = path.root();
     auto serialized = crypto_.BIP32().AccountChildKey(path, chain, index);
 
     if (false == bool(serialized)) {
@@ -472,7 +472,7 @@ std::string Blockchain::calculate_address(
         return {};
     }
 
-    const auto prefix = address_prefix(account.type());
+    const auto prefix = GetAddressPrefix(account.type());
     auto preimage = Data::Factory(&prefix, sizeof(prefix));
 
     OT_ASSERT(1 == preimage->GetSize());

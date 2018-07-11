@@ -82,7 +82,7 @@ public:
     EXPORT static OTData Factory(const OTASCIIArmor& source);
     EXPORT static OTData Factory(const std::vector<unsigned char>& source);
 #endif
-
+    EXPORT static Data fromHex(const std::string&);
     EXPORT virtual bool operator==(const Data& rhs) const = 0;
     EXPORT virtual bool operator!=(const Data& rhs) const = 0;
     EXPORT virtual std::string asHex() const = 0;

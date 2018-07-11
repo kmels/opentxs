@@ -51,9 +51,15 @@
 #include "opentxs/core/Nym.hpp"
 #include <opentxs/api/Native.hpp>
 #include "opentxs/core/crypto/AsymmetricKeyEC.hpp"
+#if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
+#include "opentxs/core/crypto/AsymmetricKeySecp256k1.hpp"
+#endif
 #include <opentxs/core/crypto/OTPasswordData.hpp>
 #include <trezor-crypto/ecdsa.h>
 #include "Bip47.hpp"
+#include "opentxs/core/crypto/AsymmetricKeySecp256k1.hpp"
+#include "opentxs/core/crypto/OTAsymmetricKey.hpp"
+#include "opentxs/api/crypto/Encode.hpp"
 
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
 class B;
@@ -62,6 +68,80 @@ class B;
 
 namespace opentxs::api::crypto::implementation
 {
+
+std::string Bip47::PubKeyAddress(
+    const proto::AsymmetricKey serialized,
+    const proto::ContactItemType chain) const
+{
+    // TODO: refactor to blockchain interface
+    std::unique_ptr<OTAsymmetricKey> key{nullptr};
+    std::unique_ptr<AsymmetricKeySecp256k1> ecKey{nullptr};
+    key.reset(OTAsymmetricKey::KeyFactory(serialized));
+
+    if (false == bool(key)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Unable to instantiate key."
+              << std::endl;
+
+        return {};
+    }
+
+    ecKey.reset(dynamic_cast<AsymmetricKeySecp256k1*>(key.release()));
+
+    if (false == bool(ecKey)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Incorrect key type."
+              << std::endl;
+
+        return {};
+    }
+
+    auto pubkey = Data::Factory();
+
+    if (false == ecKey->GetPublicKey(pubkey)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Unable to extract public key."
+              << std::endl;
+
+        return {};
+    }
+
+    if (33 != pubkey->GetSize()) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Incorrect pubkey size ("
+              << pubkey->GetSize() << ")." << std::endl;
+
+        return {};
+    }
+
+    auto sha256 = Data::Factory();
+    auto ripemd160 = Data::Factory();
+    auto pubkeyHash = Data::Factory();
+
+    if (!OT::App().Crypto().Hash().Digest(
+            proto::HASHTYPE_SHA256, pubkey, sha256)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate sha256."
+              << std::endl;
+
+        return {};
+    }
+
+    if (!OT::App().Crypto().Hash().Digest(
+            proto::HASHTYPE_RIMEMD160, sha256, pubkeyHash)) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate rimemd160."
+              << std::endl;
+
+        return {};
+    }
+
+    const auto prefix = OT::App().Blockchain().GetAddressPrefix(chain);
+    auto preimage = Data::Factory(&prefix, sizeof(prefix));
+
+    OT_ASSERT(1 == preimage->GetSize());
+
+    preimage += pubkeyHash;
+
+    OT_ASSERT(21 == preimage->GetSize());
+
+    return OT::App().Crypto().Encode().IdentifierEncode(preimage);
+}
+
 using Bip47Identity =
     std::tuple<bool, std::uint32_t, std::uint32_t, std::string>;
 /* success, nym, coin, fingerprint */
@@ -70,9 +150,9 @@ using HashedSecret =
 /* success, secret, designated private key, designated public key, fingerprint
  */
 
-HashedSecret Bip47::shared_secret(
+HashedSecret Bip47::SharedSecret(
     const Nym& local,
-    const PaymentCode& remote,
+    const PaymentCode* remote,
     const proto::ContactItemType chain,
     const std::uint32_t index) const
 {
@@ -82,8 +162,10 @@ HashedSecret Bip47::shared_secret(
     auto& success_ = std::get<0>(result);
     auto& s = std::get<1>(result);
     auto& a = std::get<2>(result);
-    auto& B = std::get<3>(result);
+    // auto& B = std::get<3>(result);
+
     // local nym derives a BIP47 account derived from seed
+    std::cout << "Getting account \n";
     auto [success, nym, coin, fingerprint] = get_account(local, chain);
 
     if (!success) {
@@ -100,22 +182,42 @@ HashedSecret Bip47::shared_secret(
     // m / 47' / coin' / nym' / i
     Data& privkey_data = Data::Factory();
 
-    auto ECDH_privkey = Bip47HDKey(fingerprint, coin, nym, index, false)->key();
+    serializedAsymmetricKey serialized_priv =
+        Bip47HDKey(fingerprint, coin, nym, index, false);
 
-    // privkey_data.Assign(ECDH_privkey->mutable_key(),
-    // ECDH_privkey->mutable_key()->size());
-    privkey_data.Assign(&ECDH_privkey, (&ECDH_privkey)->size());
-    a.setMemory(privkey_data);
+    OT_ASSERT(proto::KEYMODE_PRIVATE == serialized_priv->mode());
+    OTPassword key, chaincode;
+    OTPasswordData password(__FUNCTION__);
+
+    OT_ASSERT(!serialized_priv->encryptedkey().text());
+    OT_ASSERT(!serialized_priv->chaincode().text());
+
+    Ecdsa::DecryptPrivateKey(
+        (*serialized_priv).encryptedkey(),
+        serialized_priv->chaincode(),
+        password,
+        a,
+        chaincode);
+
+    OT_ASSERT(a.isMemory());
+    OT_ASSERT(chaincode.isMemory());
 
     // ii. local derives the ith public key `B` derived from remote's payment
     // code m/47'/0'/0'/index
-    Data& B_ = remote.DerivePubKeyAt(index);
-    B.Assign(B_.GetPointer(), B_.GetSize());
+    serializedAsymmetricKey serialized_xpub = remote->DerivePubKeyAt(index);
+    OT_ASSERT(proto::KEYMODE_PUBLIC == serialized_xpub->mode());
+    auto publicKey = static_cast<AsymmetricKeySecp256k1*>(
+        OTAsymmetricKey::KeyFactory(*serialized_xpub));
+
+    auto B_ = Data::Factory();
+    const auto havePubkey = publicKey->GetKey(B_);
+    OT_ASSERT(havePubkey);
+    //    B.Assign(B_->GetPointer(), B_->GetSize());
 
     // iii. local calculates a secret point:
     // S = aB
     OTPassword* S = new OTPassword();
-    bool haveECDH = ECDH(B, a, *S);
+    bool haveECDH = ECDH(B_, a, *S);
 
     if (!haveECDH) {
         otErr << OT_METHOD << __FUNCTION__
@@ -161,9 +263,11 @@ proto::AsymmetricKey Bip47::IncomingPubkey(
     const proto::ContactItemType chain,
     const std::uint32_t index) const
 {
+    OT_ASSERT(remote.VerifyInternally());
     // i. local calculates a shared secrets with remote, using the public key
     // derived remote's payment code
-    auto hashed = shared_secret(local, remote, chain, index);
+
+    auto hashed = SharedSecret(local, &remote, chain, index);
     auto& success = std::get<0>(hashed);
     auto& s = std::get<1>(hashed);
     auto& a = std::get<2>(hashed);
@@ -211,24 +315,27 @@ proto::AsymmetricKey Bip47::IncomingPubkey(
 }
 
 proto::AsymmetricKey Bip47::OutgoingPubkey(
-    [[maybe_unused]] const Nym& local,
-    [[maybe_unused]] const PaymentCode& remote,
-    [[maybe_unused]] const proto::ContactItemType chain,
-    [[maybe_unused]] const std::uint32_t index) const
+    const Nym& local,
+    const PaymentCode& remote,
+    const proto::ContactItemType chain,
+    const std::uint32_t index) const
 {
-    auto hashed = shared_secret(local, remote, chain, index);
+    auto hashed = SharedSecret(local, &remote, chain, index);
     auto& success = std::get<0>(hashed);
     auto& s = std::get<1>(hashed);
-    auto& B = std::get<3>(hashed);
-    // auto& fingerprint = std::get<4>(hashed);
 
     if (!success) { return {}; }
     // v. local uses the scalar shared secret to calculate the ephemeral public
     // key used to generate the P2PKH address for this transaction: B' = B + sG
-    // = (s+B)
-    // const Data& B = remote.DerivePubKeyAt(index);
-    auto& B_prime = const_cast<Data&>(B);  // B' := B
-    Data& sG = Data::Factory();
+
+    serializedAsymmetricKey serialized_xpub = remote.DerivePubKeyAt(index);
+    OT_ASSERT(proto::KEYMODE_PUBLIC == serialized_xpub->mode());
+    auto publicKey = static_cast<AsymmetricKeySecp256k1*>(
+        OTAsymmetricKey::KeyFactory(*serialized_xpub));
+    auto B_prime = Data::Factory();
+    OT_ASSERT(publicKey->GetKey(B_prime));  // B' := B
+
+    OTData sG = Data::Factory();
     ScalarBaseMultiply(s, sG);  // sG := sG
     AddSecp256k1(sG, B_prime);  // B' := sG + B'
 
@@ -237,7 +344,9 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
     sendKey.set_type(proto::AKEYTYPE_SECP256K1);
     sendKey.set_mode(proto::KEYMODE_PUBLIC);
     sendKey.set_role(proto::KEYROLE_AUTH);
-    sendKey.set_key(B_prime.GetPointer(), B_prime.GetSize());
+
+    OT_ASSERT(B_prime->GetSize() == 33);
+    sendKey.set_key(B_prime->GetPointer(), B_prime->GetSize());
 
     return sendKey;
 }
@@ -257,7 +366,7 @@ Bip47Identity Bip47::get_account(
 
     if (accountPath.child_size() < 2) { return result; }
 
-    success = accountPath.child(0) !=
+    success = accountPath.child(0) ==
               (static_cast<std::uint32_t>(Bip43Purpose::NYM) |
                static_cast<std::uint32_t>(Bip32Child::HARDENED));
 
@@ -270,6 +379,7 @@ Bip47Identity Bip47::get_account(
 
     return result;
 }
+
 /* Returns the key at path: m/47'/coin'/nym'/index'
  */
 serializedAsymmetricKey Bip47::Bip47HDKey(
@@ -290,16 +400,30 @@ serializedAsymmetricKey Bip47::Bip47HDKey(
     path.add_child(
         static_cast<std::uint32_t>(Bip43Purpose::PAYCODE) |
         static_cast<std::uint32_t>(Bip32Child::HARDENED));
-    path.add_child(coin | static_cast<std::uint32_t>(Bip32Child::HARDENED));
-    path.add_child(nym | static_cast<std::uint32_t>(Bip32Child::HARDENED));
-    path.add_child(
-        index | hardened_index
-            ? static_cast<std::uint32_t>(Bip32Child::HARDENED)
-            : 0);
+    path.add_child(0 | static_cast<std::uint32_t>(Bip32Child::HARDENED));
+    path.add_child(0 | static_cast<std::uint32_t>(Bip32Child::HARDENED));
+
+    if (hardened_index) {
+        path.add_child(
+            index | static_cast<std::uint32_t>(Bip32Child::HARDENED));
+    } else {
+        path.add_child(index);
+    }
 
     output = GetHDKey(EcdsaCurve::SECP256K1, *seed, path);
 
     return output;
+}
+
+std::string Bip47::NotificationAddress(
+    const Nym& local,
+    proto::ContactItemType chain) const
+{
+    // m / 47' / coin_type' / identity' / 0
+    auto [success, nym, coin, fingerprint] = get_account(local, chain);
+    if (!success) { return ""; }
+    auto notificationKey = Bip47HDKey(fingerprint, coin, nym, 0, false);
+    return PubKeyAddress(*notificationKey, chain);
 }
 
 }  // namespace opentxs::api::crypto::implementation

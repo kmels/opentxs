@@ -1,5 +1,3 @@
-# Copyright (c) Monetas AG, 2014
-
 set(name unittests-opentxs)
 
 set(cxx-sources

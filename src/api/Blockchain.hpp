@@ -88,6 +88,8 @@ public:
         const bool incoming) const override;
     std::pair<OTIdentifier, OTIdentifier> LookupChannelByAddress(
         const std::string& address) const override;
+    std::uint8_t GetAddressPrefix(
+        const proto::ContactItemType type) const override;
     Bip44Type GetBip44Type(const proto::ContactItemType type) const override;
     OTIdentifier NewAccount(
         const Identifier& nymID,
@@ -141,7 +143,6 @@ private:
         const std::uint32_t index,
         proto::Bip44Account& account,
         const BIP44Chain chain) const;
-    std::uint8_t address_prefix(const proto::ContactItemType type) const;
 
     std::string calculate_address(
         const proto::Bip44Account& account,

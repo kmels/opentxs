@@ -2,6 +2,7 @@
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/../deps/)
 
+add_subdirectory(api)
 add_subdirectory(blockchain)
 add_subdirectory(client)
 add_subdirectory(core)

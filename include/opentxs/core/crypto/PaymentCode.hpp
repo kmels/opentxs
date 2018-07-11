@@ -41,6 +41,8 @@
 
 #include "opentxs/Forward.hpp"
 
+#include "opentxs/core/crypto/CryptoAsymmetric.hpp"
+
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
 #include "opentxs/Proto.hpp"
 //#include "opentxs/core/crypto/OTAsymmetricKey.hpp"
@@ -80,7 +82,8 @@ public:
         const Credential& credential,
         proto::Signature& sig,
         const OTPasswordData* pPWData = nullptr) const = 0;
-    EXPORT virtual Data& DerivePubKeyAt(const std::uint32_t& i) const = 0;
+    EXPORT virtual std::shared_ptr<proto::AsymmetricKey> DerivePubKeyAt(
+        const std::uint32_t& i) const = 0;
 
     EXPORT virtual bool AddPrivateKeys(
         const std::string& seed,
