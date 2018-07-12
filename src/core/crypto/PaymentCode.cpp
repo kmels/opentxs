@@ -604,23 +604,8 @@ std::shared_ptr<proto::AsymmetricKey> PaymentCode::DerivePubKeyAt(
 
     serializedAsymmetricKey master_childkey = master_key;
 
+    // TODO: Actually derive the a non hardened child
     OT::App().Crypto().BIP32().GetChild(*master_key, i);
-
-    // OTData ProtoAsData(const T& serialized)
-
-    // SerializedPaymentCode pcode = remote.Serialize();
-    // proto::AsymmetricKey xpub = *master_childkey;
-    // opentxs::AsymmetricKeyEC publicKey = new opentxs::AsymmetricKeyEC(xpub);
-    // const std::string& pubKey = pcode->key();
-    // const std::string& chainCode = pcode->chaincode();
-
-    // HDNode* node =
-    // OT::App().Crypto().BIP32().SerializedToHDNode(*master_childkey).get();
-    // int ckd_result = ::hdnode_public_ckd(node.get(), i);
-    // OT_ASSERT_MSG((1 == ckd_result), "Derivation of child off PubKey node
-    // failed.");
-
-    // auto node = InstantiateHDNode(curve, seed);
 
     OTData B = Data::Factory(
         master_childkey->key().c_str(), master_childkey->key().size());
