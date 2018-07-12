@@ -345,13 +345,12 @@ serializedAsymmetricKey TrezorCrypto::MasterPubKeyFromBytes(
     OT_ASSERT_MSG(output, "Instantiation of master node failed.");
 
     int result = ::hdnode_from_xpub(
-        0, index, chain_code, pubkey, CurveName(curve).c_str(), output.get());
+        0, 0, chain_code, pubkey, CurveName(curve).c_str(), output.get());
     OT_ASSERT_MSG((1 == result), "Derivation of master PubKey node failed.");
 
     std::cout << index;
     // OT_ASSERT(index>=0);
-    // hdnode_public_ckd(output.get(), 0);
-    hdnode_public_ckd(output.get(), index);
+    hdnode_public_ckd(output.get(), 0);
 
     return HDNodeToSerialized(
         CryptoAsymmetric::CurveToKeyType(curve),

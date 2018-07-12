@@ -370,11 +370,18 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
     const proto::ContactItemType chain,
     const std::uint32_t index) const
 {
-    auto hashed = SecretPoint(local, remote, chain, index);
-    auto& success = std::get<0>(hashed);
-    auto& s = std::get<1>(hashed);
+    auto secret = SecretPoint(local, remote, chain, index);
+    auto& secret_success = std::get<0>(secret);
 
-    if (!success) { return {}; }
+    if (!secret_success) { return {}; }
+
+    OTPassword& secret_x = std::get<1>(secret);
+    auto hashed = HashSecret(&secret_x);
+    auto& hash_success = std::get<0>(hashed);
+    OTPassword& s = std::get<1>(hashed);
+
+    if (!hash_success) { return {}; }
+
     // v. local uses the scalar shared secret to calculate the ephemeral public
     // key used to generate the P2PKH address for this transaction: B' = B + sG
 
