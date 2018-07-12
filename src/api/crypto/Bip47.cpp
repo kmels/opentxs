@@ -205,7 +205,31 @@ std::tuple<bool, OTData> Bip47::EphemeralPubkey(
     return result;
 }
 
-std::tuple<bool, OTPassword&> Bip47::SharedSecret(
+std::tuple<bool, OTPassword&> Bip47::HashSecret(const OTPassword* Sx) const
+{
+    std::tuple<bool, OTPassword&> result{false, *(new OTPassword())};
+    auto& success_ = std::get<0>(result);
+    auto& h = std::get<1>(result);
+    OTPassword& hashed_secret = *(new OTPassword());
+
+    // iv. local calculates a scalar shared secret using the x value of S:
+    // s = SHA256(Sx)
+    if (!(OT::App().Crypto().Hash().Digest(
+            proto::HASHTYPE_SHA256, *Sx, hashed_secret))) {
+        otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate sha256."
+              << std::endl;
+
+        return result;
+    }
+
+    success_ = IsSecp256k1(hashed_secret);
+    OT_ASSERT(success_);
+
+    if (success_) { h = hashed_secret; }
+    return result;
+}
+
+std::tuple<bool, OTPassword&> Bip47::SecretPoint(
     const Nym& local,
     const PaymentCode& remote,
     const proto::ContactItemType chain,
@@ -216,7 +240,7 @@ std::tuple<bool, OTPassword&> Bip47::SharedSecret(
     auto& s = std::get<1>(result);
 
     // local nym derives a BIP47 account derived from seed
-    auto acc = get_account(local, chain);
+    auto acc = Bip47ID(local, chain);
     auto success = std::get<0>(acc);
 
     if (!success) {
@@ -247,9 +271,9 @@ std::tuple<bool, OTPassword&> Bip47::SharedSecret(
     // iii. local calculates a secret point:
     // S = aB
     OTPassword* S = new OTPassword();
-    bool haveECDH = ECDH(B, a, *S);
+    success_ = ECDH(B, a, *S);
 
-    if (!haveECDH) {
+    if (!success_) {
         otErr << OT_METHOD << __FUNCTION__
               << ": ECDH shared secret negotiation failed." << std::endl;
 
@@ -257,23 +281,8 @@ std::tuple<bool, OTPassword&> Bip47::SharedSecret(
         return result;
     }
 
-    // iv. local calculates a scalar shared secret using the x value of S:
-    // s = SHA256(Sx)
-    const auto& Sx = S;
-    OTPassword& secret_point = *(new OTPassword());
-    if (!(OT::App().Crypto().Hash().Digest(
-            proto::HASHTYPE_SHA256, *Sx, secret_point))) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate sha256."
-              << std::endl;
-
-        return result;
-    }
-
-    success_ = IsSecp256k1(secret_point);
-    OT_ASSERT(success_);
-
-    if (success_) { s = secret_point; }
-
+    const auto& Sx = *S;
+    s = Sx;
     return result;
 }
 
@@ -293,17 +302,18 @@ proto::AsymmetricKey Bip47::IncomingPubkey(
     OT_ASSERT(remote.VerifyInternally());
     // i. local calculates a shared secrets with remote, using the public key
     // derived remote's payment code
-    auto acc = get_account(local, chain);
+    auto acc = Bip47ID(local, chain);
     auto privkey_data = EphemeralPrivkey(acc, index);
     auto& [privk_ok, a] = privkey_data;
 
     OT_ASSERT(privk_ok);
     OT_ASSERT(a.isMemory());
 
-    auto hashed = SharedSecret(local, remote, chain, index);
-    auto& success = std::get<0>(hashed);
+    auto shared = SecretPoint(local, remote, chain, index);
+    auto& success = std::get<0>(shared);
+    auto& Sx = std::get<1>(shared);
+    auto hashed = HashSecret(&Sx);
     auto& s = std::get<1>(hashed);
-
     // ii. local calculates the ephemeral deposit addresses using the same
     // procedure as remote: B' B + sG
     // auto& B_prime = B; // B' := B
@@ -360,7 +370,7 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
     const proto::ContactItemType chain,
     const std::uint32_t index) const
 {
-    auto hashed = SharedSecret(local, remote, chain, index);
+    auto hashed = SecretPoint(local, remote, chain, index);
     auto& success = std::get<0>(hashed);
     auto& s = std::get<1>(hashed);
 
@@ -391,9 +401,9 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
     return sendKey;
 }
 
-Bip47Identity Bip47::get_account(
+Bip47Identity Bip47::Bip47ID(
     const Nym& local,
-    const proto::ContactItemType chain)
+    const proto::ContactItemType chain) const
 {
     Bip47Identity result{false, 0, 0, ""};
     auto& [success, nym, coin, fingerprint] = result;
@@ -464,7 +474,7 @@ std::string Bip47::NotificationAddress(
     proto::ContactItemType chain) const
 {
     // m / 47' / coin_type' / identity' / 0
-    auto [success, nym, coin, fingerprint] = get_account(local, chain);
+    auto [success, nym, coin, fingerprint] = Bip47ID(local, chain);
     if (!success) { return ""; }
     auto notificationKey = Bip47HDKey(fingerprint, coin, nym, 0, false);
     return PubKeyAddress(*notificationKey, chain);

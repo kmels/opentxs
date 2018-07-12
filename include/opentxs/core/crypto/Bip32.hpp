@@ -95,7 +95,8 @@ public:
     virtual serializedAsymmetricKey MasterPubKeyFromBytes(
         const EcdsaCurve& curve,
         const uint8_t* pubkey,
-        const uint8_t* chain_code) const = 0;
+        const uint8_t* chain_code,
+        const uint32_t index) const = 0;
     virtual std::unique_ptr<HDNode> SerializedToHDNode(
         const proto::AsymmetricKey& serialized) const = 0;
 

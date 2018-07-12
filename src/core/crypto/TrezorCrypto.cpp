@@ -175,13 +175,13 @@ serializedAsymmetricKey TrezorCrypto::GetChild(
 
     if (proto::KEYMODE_PRIVATE == parent.mode()) {
         hdnode_private_ckd(node.get(), index);
+        return HDNodeToSerialized(
+            parent.type(), *node, TrezorCrypto::DERIVE_PRIVATE);
     } else {
         hdnode_public_ckd(node.get(), index);
+        return HDNodeToSerialized(
+            parent.type(), *node, TrezorCrypto::DERIVE_PUBLIC);
     }
-    serializedAsymmetricKey key =
-        HDNodeToSerialized(parent.type(), *node, TrezorCrypto::DERIVE_PRIVATE);
-
-    return key;
 }
 
 std::unique_ptr<HDNode> TrezorCrypto::GetChild(
@@ -337,15 +337,21 @@ std::unique_ptr<HDNode> TrezorCrypto::InstantiateHDNode(
 serializedAsymmetricKey TrezorCrypto::MasterPubKeyFromBytes(
     const EcdsaCurve& curve,
     const uint8_t* pubkey,
-    const uint8_t* chain_code) const
+    const uint8_t* chain_code,
+    const uint32_t index) const
 {
     std::unique_ptr<HDNode> output;
     output.reset(new HDNode);
     OT_ASSERT_MSG(output, "Instantiation of master node failed.");
 
     int result = ::hdnode_from_xpub(
-        0, 0, chain_code, pubkey, CurveName(curve).c_str(), output.get());
+        0, index, chain_code, pubkey, CurveName(curve).c_str(), output.get());
     OT_ASSERT_MSG((1 == result), "Derivation of master PubKey node failed.");
+
+    std::cout << index;
+    // OT_ASSERT(index>=0);
+    // hdnode_public_ckd(output.get(), 0);
+    hdnode_public_ckd(output.get(), index);
 
     return HDNodeToSerialized(
         CryptoAsymmetric::CurveToKeyType(curve),

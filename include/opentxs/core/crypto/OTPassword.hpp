@@ -126,7 +126,7 @@ public:
     EXPORT ~OTPassword();
     EXPORT OTPassword& operator=(const OTPassword& rhs);
 
-    EXPORT virtual std::string asHex() const;
+    EXPORT std::string asHex() const;
     EXPORT bool isPassword() const;
     EXPORT const std::uint8_t* getPassword_uint8() const;
 

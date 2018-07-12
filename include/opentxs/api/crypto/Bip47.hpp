@@ -53,9 +53,28 @@ namespace api
 {
 namespace crypto
 {
+using Bip47Identity =
+    std::tuple<bool, std::uint32_t, std::uint32_t, std::string>;
+
 class Bip47
 {
 public:
+    EXPORT virtual Bip47Identity Bip47ID(
+        const Nym& local,
+        const proto::ContactItemType chain) const = 0;
+    EXPORT virtual std::tuple<bool, OTPassword&> EphemeralPrivkey(
+        const Bip47Identity& local,
+        const std::uint32_t& index) const = 0;
+    EXPORT virtual std::tuple<bool, OTData> EphemeralPubkey(
+        const PaymentCode& remote,
+        const std::uint32_t& index) const = 0;
+    EXPORT virtual std::tuple<bool, OTPassword&> HashSecret(
+        const OTPassword* secret) const = 0;
+    EXPORT virtual std::tuple<bool, OTPassword&> SecretPoint(
+        const Nym& local,
+        const PaymentCode& remote,
+        const proto::ContactItemType chain,
+        const std::uint32_t index) const = 0;
     EXPORT virtual std::string PubKeyAddress(
         const proto::AsymmetricKey key,
         const proto::ContactItemType chain) const = 0;

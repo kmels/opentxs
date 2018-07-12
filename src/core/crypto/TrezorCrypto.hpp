@@ -186,7 +186,8 @@ public:
     serializedAsymmetricKey MasterPubKeyFromBytes(
         const EcdsaCurve& curve,
         const uint8_t* pubkey,
-        const uint8_t* chain_code) const override;
+        const uint8_t* chain_code,
+        const uint32_t index) const override;
     bool RandomKeypair(OTPassword& privateKey, Data& publicKey) const override;
     std::string SeedToFingerprint(
         const EcdsaCurve& curve,

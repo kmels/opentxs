@@ -48,23 +48,24 @@
 
 namespace opentxs::api::crypto::implementation
 {
-using Bip47Identity =
-    std::tuple<bool, std::uint32_t, std::uint32_t, std::string>;
-
 class Bip47 : virtual public crypto::Bip47
 {
 public:
+    Bip47Identity Bip47ID(const Nym& local, const proto::ContactItemType chain)
+        const override;
     std::tuple<bool, OTPassword&> EphemeralPrivkey(
         const Bip47Identity& local,
-        const std::uint32_t& index) const;
+        const std::uint32_t& index) const override;
     std::tuple<bool, OTData> EphemeralPubkey(
         const PaymentCode& remote,
-        const std::uint32_t& index) const;
-    std::tuple<bool, OTPassword&> SharedSecret(
+        const std::uint32_t& index) const override;
+    std::tuple<bool, OTPassword&> HashSecret(
+        const OTPassword* secret) const override;
+    std::tuple<bool, OTPassword&> SecretPoint(
         const Nym& local,
         const PaymentCode& remote,
         const proto::ContactItemType chain,
-        const std::uint32_t index) const;
+        const std::uint32_t index) const override;
     std::string PubKeyAddress(
         const proto::AsymmetricKey key,
         const proto::ContactItemType chain) const override;
@@ -85,9 +86,6 @@ public:
 
 protected:
     Bip47() = default;
-    using HashedSecret = std::tuple<bool, OTPassword&>;
-    /* success, secret*/
-
     virtual bool AddSecp256k1(const OTPassword& scalar1, OTPassword& scalar2)
         const = 0;
     virtual bool AddSecp256k1(const Data& P, Data& Q) const = 0;
@@ -117,9 +115,6 @@ protected:
     virtual bool ValidPrivateKey(const OTPassword& key) const = 0;
 
 private:
-    static Bip47Identity get_account(
-        const Nym& local,
-        const proto::ContactItemType chain);
     Bip47(const Bip47&) = delete;
     Bip47(Bip47&&) = delete;
     Bip47& operator=(const Bip47&) = delete;

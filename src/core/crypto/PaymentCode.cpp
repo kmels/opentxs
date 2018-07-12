@@ -598,17 +598,18 @@ std::shared_ptr<proto::AsymmetricKey> PaymentCode::DerivePubKeyAt(
         OT::App().Crypto().BIP32().MasterPubKeyFromBytes(
             EcdsaCurve::SECP256K1,
             reinterpret_cast<const uint8_t*>(existingKeyData->GetPointer()),
-            reinterpret_cast<const uint8_t*>(chain_code_->getMemory()));
+            reinterpret_cast<const uint8_t*>(chain_code_->getMemory()),
+            i);
 
     OT_ASSERT(proto::KEYMODE_PUBLIC == master_key->mode());
 
     serializedAsymmetricKey master_childkey = master_key;
-
-    // TODO: Actually derive the a non hardened child
-    OT::App().Crypto().BIP32().GetChild(*master_key, i);
+    //  OT::App().Crypto().BIP32().GetChild(*master_key, i);
+    //  master_key;
 
     OTData B = Data::Factory(
         master_childkey->key().c_str(), master_childkey->key().size());
+
     OT_ASSERT(!B->IsEmpty());
 
     return master_childkey;

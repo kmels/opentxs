@@ -137,14 +137,59 @@ TEST_F(Test_Bip47, test_B_incoming)
     PaymentCode& refPay = A_PaymentCode;
 
     int idx = 0;
-    auto B_InPubKey_0 = OT::App().Crypto().BIP47().IncomingPubkey(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, idx);
-    auto A_InPubKey_0 = OT::App().Crypto().BIP47().IncomingPubkey(*A_Nym, B_PaymentCode, proto::CITEMTYPE_BTC, idx);
-    auto A_OutPubKey_0 = OT::App().Crypto().BIP47().OutgoingPubkey(*A_Nym, B_PaymentCode, proto::CITEMTYPE_BTC, idx);
-    auto B_OutPubKey_0 = OT::App().Crypto().BIP47().OutgoingPubkey(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, idx);
-    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(B_InPubKey_0, proto::CITEMTYPE_BTC).c_str());
-    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(A_InPubKey_0, proto::CITEMTYPE_BTC).c_str());
-    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(A_OutPubKey_0, proto::CITEMTYPE_BTC).c_str());
-    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(B_OutPubKey_0, proto::CITEMTYPE_BTC).c_str());
+    
+    auto A_Receive_0 = OT::App().Crypto().BIP47().IncomingPubkey(*A_Nym, B_PaymentCode, proto::CITEMTYPE_BTC, 0);
+    auto A_Send_0 = OT::App().Crypto().BIP47().OutgoingPubkey(*A_Nym, B_PaymentCode, proto::CITEMTYPE_BTC, 0);
+    auto A_Send_1 = OT::App().Crypto().BIP47().OutgoingPubkey(*A_Nym, B_PaymentCode, proto::CITEMTYPE_BTC, 1);
+
+    auto B_Receive_0 = OT::App().Crypto().BIP47().IncomingPubkey(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, 0);
+    auto B_Receive_1 = OT::App().Crypto().BIP47().IncomingPubkey(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, 1);
+    auto B_Send_0 = OT::App().Crypto().BIP47().OutgoingPubkey(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, 0);
+    auto B_Send_1 = OT::App().Crypto().BIP47().OutgoingPubkey(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, 1);
+    
+    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(A_Receive_0, proto::CITEMTYPE_BTC).c_str());
+    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(A_Send_0, proto::CITEMTYPE_BTC).c_str());
+    EXPECT_STREQ("12u3Uued2fuko2nY4SoSFGCoGLCBUGPkk6X", OT::App().Crypto().BIP47().PubKeyAddress(A_Send_1, proto::CITEMTYPE_BTC).c_str());    
+    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(B_Receive_0, proto::CITEMTYPE_BTC).c_str());
+    EXPECT_STREQ("12u3Uued2fuko2nY4SoSFGCoGLCBUGPkk6", OT::App().Crypto().BIP47().PubKeyAddress(B_Receive_1, proto::CITEMTYPE_BTC).c_str());    
+    EXPECT_STREQ("141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", OT::App().Crypto().BIP47().PubKeyAddress(B_Send_0, proto::CITEMTYPE_BTC).c_str());
+
+    auto acc_a = OT::App().Crypto().BIP47().Bip47ID(*A_Nym, proto::CITEMTYPE_BTC);
+    auto acc_b = OT::App().Crypto().BIP47().Bip47ID(*B_Nym, proto::CITEMTYPE_BTC);
+
+    auto [a0_, a0] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_a, 0);
+    auto [b0_, b0] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_b, 0);
+    auto [b1_, b1] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_b, 1);
+    ASSERT_TRUE(a0_); //ASSERT_TRUE(a1_);
+    ASSERT_TRUE(b0_); ASSERT_TRUE(b1_);
+    
+    //EXPECT_STREQ("D687F6B820E6E3D47296B01F3B73CCDC930EDED39D559921A7DD8ED81B2C8F82", B_0th_privhex.c_str());
+    EXPECT_STREQ("8D6A8ECD8EE5E0042AD0CB56E3A971C760B5145C3917A8E7BEAF0ED92D7A520C", a0.asHex().c_str());
+    EXPECT_STREQ("04448FD1BE0C9C13A5CA0B530E464B619DC091B299B98C5CAB9978B32B4A1B8B", b0.asHex().c_str());
+    EXPECT_STREQ("6BFA917E4C44349BFDF46346D389BF73A18CEC6BC544CE9F337E14721F06107B", b1.asHex().c_str());
+    // expected is actual <-> priv bytes == accountKey
+    
+    // 04448fd1be0c9c13a5ca0b530e464b619dc091b299b98c5cab9978b32b4a1b8b
+    auto [A0_, A0] = OT::App().Crypto().BIP47().EphemeralPubkey(A_PaymentCode, 0);
+    auto [A1_, A1] = OT::App().Crypto().BIP47().EphemeralPubkey(A_PaymentCode, 1);
+    auto [B0_, B0] = OT::App().Crypto().BIP47().EphemeralPubkey(B_PaymentCode, 0);
+    auto [B1_, B1] = OT::App().Crypto().BIP47().EphemeralPubkey(B_PaymentCode, 1);
+    ASSERT_TRUE(B0_); ASSERT_TRUE(B1_);
+    
+    // 0353883a146a23f988e0f381a9507cbdb3e3130cd81b3ce26daf2af088724ce683 // is derived pubkey
+    
+    EXPECT_STREQ("0353883A146A23F988E0F381A9507CBDB3E3130CD81B3CE26DAF2AF088724CE683", A0->asHex().c_str());
+    EXPECT_STREQ("0353883A146A23F988E0F381A9507CBDB3E3130CD81B3CE26DAF2AF088724CE683", A1->asHex().c_str());
+    EXPECT_STREQ("024CE8E3B04EA205FF49F529950616C3DB615B1E37753858CC60C1CE64D17E2AD8", B0->asHex().c_str());
+    EXPECT_STREQ("03E092E58581CF950FF9C8FC64395471733E13F97DEDAC0044EBD7D60CCC1EEA4D", B1->asHex().c_str());    
+    // actual: 2435D8554C8C94021CB78C2A5D1F083437011A222EA20388D4D63042E9B5C46E
+    
+    auto [S0_, S0] = OT::App().Crypto().BIP47().SecretPoint(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, 0);
+    auto [S1_, S1] = OT::App().Crypto().BIP47().SecretPoint(*B_Nym, A_PaymentCode, proto::CITEMTYPE_BTC, 1);
+    auto [S0_B_, S0_B] = OT::App().Crypto().BIP47().SecretPoint(*A_Nym, B_PaymentCode, proto::CITEMTYPE_BTC, 0);
+    EXPECT_STREQ("F5BB84706EE366052471E6139E6A9A969D586E5FE6471A9B96C3D8CAEFE86FEF", S0.asHex().c_str());
+    EXPECT_STREQ("ADFB9B18EE1C4460852806A8780802096D67A8C1766222598DC801076BEB0B4D", S1.asHex().c_str());
+    EXPECT_STREQ("F5BB84706EE366052471E6139E6A9A969D586E5FE6471A9B96C3D8CAEFE86FEF", S0_B.asHex().c_str());
 }
 
 /* TEST_F(Test_Bip47, test_outgoing)
