@@ -212,8 +212,6 @@ std::tuple<bool, OTPassword&> Bip47::HashSecret(const OTPassword* Sx) const
     auto& h = std::get<1>(result);
     OTPassword& hashed_secret = *(new OTPassword());
 
-    // iv. local calculates a scalar shared secret using the x value of S:
-    // s = SHA256(Sx)
     if (!(OT::App().Crypto().Hash().Digest(
             proto::HASHTYPE_SHA256, *Sx, hashed_secret))) {
         otErr << OT_METHOD << __FUNCTION__ << ": Unable to calculate sha256."
@@ -230,46 +228,13 @@ std::tuple<bool, OTPassword&> Bip47::HashSecret(const OTPassword* Sx) const
 }
 
 std::tuple<bool, OTPassword&> Bip47::SecretPoint(
-    const Nym& local,
-    const PaymentCode& remote,
-    const proto::ContactItemType chain,
-    const std::uint32_t index) const
+    const OTPassword& a,
+    const OTData B) const
 {
     std::tuple<bool, OTPassword&> result{false, *(new OTPassword())};
     auto& success_ = std::get<0>(result);
     auto& s = std::get<1>(result);
 
-    // local nym derives a BIP47 account derived from seed
-    auto acc = Bip47ID(local, chain);
-    auto success = std::get<0>(acc);
-
-    if (!success) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Failed to get account."
-              << std::endl;
-
-        return result;
-    }
-
-    // i. local selects the ith private key `a` derived from
-    // m / 47' / coin' / nym' / i
-    auto privkey_data = EphemeralPrivkey(acc, index);
-    auto& [privk_ok, a] = privkey_data;
-    OT_ASSERT(privk_ok);
-
-    // ii. local derives the ith public key `B` derived from remote's payment
-    // code m/47'/0'/0'/index
-    auto pubkey_data = EphemeralPubkey(remote, index);
-    auto& [pubk_ok, B] = pubkey_data;
-    OT_ASSERT(pubk_ok);
-
-    if (!pubk_ok || !privk_ok) {
-        otErr << OT_METHOD << __FUNCTION__ << ": Failed to calculate ECDH key: "
-              << (privk_ok ? " pub" : " priv") << std::endl;
-        return result;
-    }
-
-    // iii. local calculates a secret point:
-    // S = aB
     OTPassword* S = new OTPassword();
     success_ = ECDH(B, a, *S);
 
@@ -277,12 +242,11 @@ std::tuple<bool, OTPassword&> Bip47::SecretPoint(
         otErr << OT_METHOD << __FUNCTION__
               << ": ECDH shared secret negotiation failed." << std::endl;
 
-        a.zeroMemory();
+        // a.zeroMemory();
         return result;
     }
 
-    const auto& Sx = *S;
-    s = Sx;
+    s = *S;
     return result;
 }
 
@@ -300,68 +264,43 @@ proto::AsymmetricKey Bip47::IncomingPubkey(
     const std::uint32_t index) const
 {
     OT_ASSERT(remote.VerifyInternally());
-    // i. local calculates a shared secrets with remote, using the public key
-    // derived remote's payment code
     auto acc = Bip47ID(local, chain);
-    auto privkey_data = EphemeralPrivkey(acc, index);
-    auto& [privk_ok, a] = privkey_data;
 
+    // i. local calculates n shared secrets with remote, using the 0th
+    // public key derived remote's payment code,
+    // and private keys derived from the ith local's payment code
+
+    auto [privk_ok, a] = EphemeralPrivkey(acc, index);
     OT_ASSERT(privk_ok);
-    OT_ASSERT(a.isMemory());
 
-    auto shared = SecretPoint(local, remote, chain, index);
-    auto& success = std::get<0>(shared);
-    auto& Sx = std::get<1>(shared);
-    auto hashed = HashSecret(&Sx);
-    auto& s = std::get<1>(hashed);
+    auto [pubk_ok, B] = EphemeralPubkey(remote, 0);
+    OT_ASSERT(pubk_ok);
+
+    auto [ecdh_success, Sx] = SecretPoint(a, B);
+    auto [hash_success, s] = HashSecret(&Sx);
+
     // ii. local calculates the ephemeral deposit addresses using the same
-    // procedure as remote: B' B + sG
-    // auto& B_prime = B; // B' := B
-    // Data& sG = Data::Factory();
-    // ScalarBaseMultiply(s, sG); // sG := sG
-    // AddSecp256k1(sG, B_prime); // B' := sG + B'
-
-    // iii. local calculates the private key for each ephemeral address as:
-    // a' = a + s
-    if (!success || !AddSecp256k1(s, a)) {
+    // procedure as remote: A' = A + sG
+    if (!hash_success || !ecdh_success) {
         otErr << OT_METHOD << __FUNCTION__
               << ": Unable to calculate ephemeral private key." << std::endl;
         return {};
     }
-    // a := s + a
-    OT_ASSERT(ValidPrivateKey(a));
-    OT_ASSERT(a.isMemory());
 
-    proto::AsymmetricKey receivePrivKey{};
+    OTData sG = Data::Factory();
+    OTData A = Data::Factory();
+    ScalarBaseMultiply(s, sG);  // sG := sG
+    ScalarBaseMultiply(a, A);   // A := aG
+    AddSecp256k1(sG, A);        // A' := sG + A
 
-    receivePrivKey.set_version(1);
-    receivePrivKey.set_type(proto::AKEYTYPE_SECP256K1);
-    receivePrivKey.set_mode(proto::KEYMODE_PRIVATE);
-    receivePrivKey.set_role(proto::KEYROLE_AUTH);
-
-    auto& encryptedKey = *receivePrivKey.mutable_encryptedkey();
-    OTPasswordData password(__FUNCTION__);
-    OTPassword privateKey;
-    privateKey.setMemory(a.getMemory(), a.getMemorySize());
-    Ecdsa::EncryptPrivateKey(privateKey, password, encryptedKey);
-
-    receivePrivKey.set_key(a.getMemory(), a.getMemorySize());
-
-    // Data& DepositPubKey = Data::Factory();
-    // ScalarBaseMultiply(a, DepositPubKey); // B = bG
-
-    proto::AsymmetricKey receivePubKey{};
-    bool haveKey{false};
-    haveKey = static_cast<const Libsecp256k1&>(OT::App().Crypto().SECP256K1())
-                  .PrivateToPublic(receivePrivKey, receivePubKey);
-
-    if (!haveKey) { return {}; }
-
-    std::unique_ptr<OTAsymmetricKey> key{nullptr};
-    std::unique_ptr<AsymmetricKeySecp256k1> ecKey{nullptr};
-    key.reset(OTAsymmetricKey::KeyFactory(receivePubKey));
-
-    return receivePubKey;
+    proto::AsymmetricKey receiveKey;
+    receiveKey.set_version(1);
+    receiveKey.set_type(proto::AKEYTYPE_SECP256K1);
+    receiveKey.set_mode(proto::KEYMODE_PUBLIC);
+    receiveKey.set_role(proto::KEYROLE_AUTH);
+    OT_ASSERT(A->GetSize() == 33);
+    receiveKey.set_key(A->GetPointer(), A->GetSize());
+    return receiveKey;
 }
 
 proto::AsymmetricKey Bip47::OutgoingPubkey(
@@ -370,17 +309,30 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
     const proto::ContactItemType chain,
     const std::uint32_t index) const
 {
-    auto secret = SecretPoint(local, remote, chain, index);
-    auto& secret_success = std::get<0>(secret);
+    OT_ASSERT(remote.VerifyInternally());
+    auto acc = Bip47ID(local, chain);
 
-    if (!secret_success) { return {}; }
+    // i. local selects the ith private key `a` derived from
+    // m / 47' / coin' / nym' / i
+    auto [privk_ok, a] = EphemeralPrivkey(acc, 0);
+    OT_ASSERT(privk_ok);
 
-    OTPassword& secret_x = std::get<1>(secret);
-    auto hashed = HashSecret(&secret_x);
-    auto& hash_success = std::get<0>(hashed);
-    OTPassword& s = std::get<1>(hashed);
+    // ii. local derives the ith public key `B` derived from remote's payment
+    // code m/47'/0'/0'/index
+    auto [pubk_ok, B] = EphemeralPubkey(remote, index);
+    OT_ASSERT(pubk_ok);
 
-    if (!hash_success) { return {}; }
+    // iii. local calculates a secret point:
+    // S = aB
+
+    auto [ecdh_success, Sx] = SecretPoint(a, B);
+
+    // iv. local calculates a scalar shared secret using the x value of S:
+    // s = SHA256(Sx)
+
+    auto [hash_success, s] = HashSecret(&Sx);
+
+    if (!ecdh_success || !hash_success) { return {}; }
 
     // v. local uses the scalar shared secret to calculate the ephemeral public
     // key used to generate the P2PKH address for this transaction: B' = B + sG
@@ -389,12 +341,13 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
     OT_ASSERT(proto::KEYMODE_PUBLIC == serialized_xpub->mode());
     auto publicKey = static_cast<AsymmetricKeySecp256k1*>(
         OTAsymmetricKey::KeyFactory(*serialized_xpub));
-    auto B_prime = Data::Factory();
-    OT_ASSERT(publicKey->GetKey(B_prime));  // B' := B
 
-    OTData sG = Data::Factory();
-    ScalarBaseMultiply(s, sG);  // sG := sG
-    AddSecp256k1(sG, B_prime);  // B' := sG + B'
+    auto B_prime = Data::Factory();
+    auto sG = Data::Factory();
+
+    OT_ASSERT(publicKey->GetKey(B_prime));  // B' := B
+    ScalarBaseMultiply(s, sG);              // sG := sG
+    AddSecp256k1(sG, B_prime);              // B' := sG + B'
 
     proto::AsymmetricKey sendKey;
     sendKey.set_version(1);
@@ -461,8 +414,8 @@ serializedAsymmetricKey Bip47::Bip47HDKey(
     path.add_child(
         static_cast<std::uint32_t>(Bip43Purpose::PAYCODE) |
         static_cast<std::uint32_t>(Bip32Child::HARDENED));
-    path.add_child(0 | static_cast<std::uint32_t>(Bip32Child::HARDENED));
-    path.add_child(0 | static_cast<std::uint32_t>(Bip32Child::HARDENED));
+    path.add_child(coin | static_cast<std::uint32_t>(Bip32Child::HARDENED));
+    path.add_child(nym | static_cast<std::uint32_t>(Bip32Child::HARDENED));
 
     if (hardened_index) {
         path.add_child(

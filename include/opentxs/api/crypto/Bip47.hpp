@@ -71,10 +71,8 @@ public:
     EXPORT virtual std::tuple<bool, OTPassword&> HashSecret(
         const OTPassword* secret) const = 0;
     EXPORT virtual std::tuple<bool, OTPassword&> SecretPoint(
-        const Nym& local,
-        const PaymentCode& remote,
-        const proto::ContactItemType chain,
-        const std::uint32_t index) const = 0;
+        const OTPassword& privkey,
+        const OTData pubkey) const = 0;
     EXPORT virtual std::string PubKeyAddress(
         const proto::AsymmetricKey key,
         const proto::ContactItemType chain) const = 0;

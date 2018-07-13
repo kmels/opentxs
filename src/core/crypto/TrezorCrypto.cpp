@@ -348,9 +348,7 @@ serializedAsymmetricKey TrezorCrypto::MasterPubKeyFromBytes(
         0, 0, chain_code, pubkey, CurveName(curve).c_str(), output.get());
     OT_ASSERT_MSG((1 == result), "Derivation of master PubKey node failed.");
 
-    std::cout << index;
-    // OT_ASSERT(index>=0);
-    hdnode_public_ckd(output.get(), 0);
+    hdnode_public_ckd(output.get(), index);
 
     return HDNodeToSerialized(
         CryptoAsymmetric::CurveToKeyType(curve),

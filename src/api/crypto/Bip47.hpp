@@ -62,10 +62,8 @@ public:
     std::tuple<bool, OTPassword&> HashSecret(
         const OTPassword* secret) const override;
     std::tuple<bool, OTPassword&> SecretPoint(
-        const Nym& local,
-        const PaymentCode& remote,
-        const proto::ContactItemType chain,
-        const std::uint32_t index) const override;
+        const OTPassword& privkey,
+        const OTData pubkey) const override;
     std::string PubKeyAddress(
         const proto::AsymmetricKey key,
         const proto::ContactItemType chain) const override;
