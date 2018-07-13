@@ -60,7 +60,6 @@ set(cxx-headers
   CryptoSymmetricDecryptOutput.cpp
   NullCallback.hpp
   PaymentCode.hpp
-  TrezorCrypto.hpp
 )
 
 set(MODULE_NAME opentxs-core-crypto)

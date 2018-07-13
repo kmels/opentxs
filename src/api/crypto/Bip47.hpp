@@ -41,32 +41,84 @@
 
 #include "opentxs/Forward.hpp"
 
-#include "opentxs/api/crypto/Bip47.hpp"
-
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
+
+#include "opentxs/api/crypto/Bip47.hpp"
+#include "opentxs/crypto/Bip32.hpp"
+#include <trezor-crypto/bip32.h>
 
 namespace opentxs::api::crypto::implementation
 {
 class Bip47 : virtual public crypto::Bip47
 {
 public:
+    Bip44AccountSource AccountSource(const Nym& local, const proto::ContactItemType chain)
+        const override;
+    std::tuple<bool, OTPassword&> LocalPaymentCode(
+        const Bip44AccountSource& local,
+        const std::uint32_t& index) const override;
+    std::tuple<bool, OTData> RemotePaymentCode(
+        const PaymentCode& remote,
+        const std::uint32_t& index) const override;
+    std::tuple<bool, OTPassword&> HashSecret(
+        const OTPassword* secret) const override;
+    std::tuple<bool, OTPassword&> SecretPoint(
+        const OTPassword& privkey,
+        const OTData pubkey) const override;
     proto::AsymmetricKey IncomingPubkey(
-        const PaymentCode& local,
+        const Nym& local,
         const PaymentCode& remote,
         const proto::ContactItemType chain,
         const std::uint32_t index) const override;
     proto::AsymmetricKey OutgoingPubkey(
-        const PaymentCode& local,
+        const Nym& local,
         const PaymentCode& remote,
         const proto::ContactItemType chain,
         const std::uint32_t index) const override;
-
+    std::string NotificationAddress(
+        const Nym& local,
+        proto::ContactItemType chain) const override;
     virtual ~Bip47() = default;
 
 protected:
     Bip47() = default;
 
+    virtual bool AddSecp256k1(const Data& P, Data& Q) const = 0;    
+
+    virtual bool ECDH(
+        const Data& publicKey,
+        const OTPassword& privateKey,
+        OTPassword& secret) const = 0;
+
+    virtual std::shared_ptr<proto::AsymmetricKey> HDNodeToSerialized(
+        const proto::AsymmetricKeyType& type,
+        const HDNode& node,
+        const bool privateVersion) const = 0;
+
+    virtual bool IsSecp256k1(OTPassword& P) const = 0;
+
+    virtual std::shared_ptr<proto::AsymmetricKey> GetHDKey(
+        const EcdsaCurve& curve,
+        const OTPassword& seed,
+        proto::HDPath& path) const = 0;
+
+    virtual bool ScalarBaseMultiply(
+        const OTPassword& privateKey,
+        Data& publicKey) const = 0;
+    virtual bool ValidPrivateKey(const OTPassword& key) const = 0;
+
 private:
+    std::shared_ptr<proto::AsymmetricKey> get_privkey(
+        std::string& fingerprint,
+        const std::uint32_t coin,
+        const std::uint32_t nym,
+        const std::uint32_t index,
+        const bool hardened_index) const;
+
+    std::shared_ptr<proto::AsymmetricKey> get_xpubkey_child(
+        const PaymentCode& remote,
+        const std::uint32_t index) const;
+  
     Bip47(const Bip47&) = delete;
     Bip47(Bip47&&) = delete;
     Bip47& operator=(const Bip47&) = delete;

@@ -81,9 +81,6 @@ extern "C" {
 #endif
 }
 
-#if OT_CRYPTO_USING_TREZOR
-#include "core/crypto/TrezorCrypto.hpp"
-#endif
 #include "Encode.hpp"
 #include "Hash.hpp"
 #include "Symmetric.hpp"
@@ -159,7 +156,7 @@ const opentxs::crypto::Bip39& Crypto::BIP39() const
 #endif
 
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
-const api::crypto::Bip47& Crypto::BIP47() const
+const opentxs::api::crypto::Bip47& Crypto::BIP47() const
 {
     OT_ASSERT(nullptr != bitcoincrypto_);
 
