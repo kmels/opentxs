@@ -114,12 +114,12 @@ TEST_F(Test_Bip47, test_ecdh_vectors)
     auto acc_a = OT::App().Crypto().BIP47().Bip47ID(*A_Nym, proto::CITEMTYPE_BTC);
     auto acc_b = OT::App().Crypto().BIP47().Bip47ID(*B_Nym, proto::CITEMTYPE_BTC);
 
-    auto [a0_, a0] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_a, 0);
-    auto [a1_, a1] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_a, 1);
-    auto [a2_, a2] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_a, 2);
-    auto [b0_, b0] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_b, 0);
-    auto [b1_, b1] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_b, 1);
-    auto [b2_, b2] = OT::App().Crypto().BIP47().EphemeralPrivkey(acc_b, 2);
+    auto [a0_, a0] = OT::App().Crypto().BIP47().LocalPaymentCode(acc_a, 0);
+    auto [a1_, a1] = OT::App().Crypto().BIP47().LocalPaymentCode(acc_a, 1);
+    auto [a2_, a2] = OT::App().Crypto().BIP47().LocalPaymentCode(acc_a, 2);
+    auto [b0_, b0] = OT::App().Crypto().BIP47().LocalPaymentCode(acc_b, 0);
+    auto [b1_, b1] = OT::App().Crypto().BIP47().LocalPaymentCode(acc_b, 1);
+    auto [b2_, b2] = OT::App().Crypto().BIP47().LocalPaymentCode(acc_b, 2);
     ASSERT_TRUE(a0_); ASSERT_TRUE(a1_); ASSERT_TRUE(a2_);
     ASSERT_TRUE(b0_); ASSERT_TRUE(b1_); ASSERT_TRUE(b2_);
 
@@ -130,12 +130,12 @@ TEST_F(Test_Bip47, test_ecdh_vectors)
     EXPECT_STREQ("6BFA917E4C44349BFDF46346D389BF73A18CEC6BC544CE9F337E14721F06107B", b1.asHex().c_str());
     EXPECT_STREQ("46D32FBEE043D8EE176FE85A18DA92557EE00B189B533FCE2340E4745C4B7B8C", b2.asHex().c_str());
     
-    auto [A0_, A0] = OT::App().Crypto().BIP47().EphemeralPubkey(A_PaymentCode, 0);
-    auto [A1_, A1] = OT::App().Crypto().BIP47().EphemeralPubkey(A_PaymentCode, 1);
-    auto [A2_, A2] = OT::App().Crypto().BIP47().EphemeralPubkey(A_PaymentCode, 2);
-    auto [B0_, B0] = OT::App().Crypto().BIP47().EphemeralPubkey(B_PaymentCode, 0);
-    auto [B1_, B1] = OT::App().Crypto().BIP47().EphemeralPubkey(B_PaymentCode, 1);
-    auto [B2_, B2] = OT::App().Crypto().BIP47().EphemeralPubkey(B_PaymentCode, 2);
+    auto [A0_, A0] = OT::App().Crypto().BIP47().RemotePaymentCode(A_PaymentCode, 0);
+    auto [A1_, A1] = OT::App().Crypto().BIP47().RemotePaymentCode(A_PaymentCode, 1);
+    auto [A2_, A2] = OT::App().Crypto().BIP47().RemotePaymentCode(A_PaymentCode, 2);
+    auto [B0_, B0] = OT::App().Crypto().BIP47().RemotePaymentCode(B_PaymentCode, 0);
+    auto [B1_, B1] = OT::App().Crypto().BIP47().RemotePaymentCode(B_PaymentCode, 1);
+    auto [B2_, B2] = OT::App().Crypto().BIP47().RemotePaymentCode(B_PaymentCode, 2);
     ASSERT_TRUE(B0_); ASSERT_TRUE(B1_);
     
     EXPECT_STREQ("0353883A146A23F988E0F381A9507CBDB3E3130CD81B3CE26DAF2AF088724CE683", A0->asHex().c_str());

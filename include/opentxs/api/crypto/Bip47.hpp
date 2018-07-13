@@ -62,10 +62,10 @@ public:
     EXPORT virtual Bip47Identity Bip47ID(
         const Nym& local,
         const proto::ContactItemType chain) const = 0;
-    EXPORT virtual std::tuple<bool, OTPassword&> EphemeralPrivkey(
+    EXPORT virtual std::tuple<bool, OTPassword&> LocalPaymentCode(
         const Bip47Identity& local,
         const std::uint32_t& index) const = 0;
-    EXPORT virtual std::tuple<bool, OTData> EphemeralPubkey(
+    EXPORT virtual std::tuple<bool, OTData> RemotePaymentCode(
         const PaymentCode& remote,
         const std::uint32_t& index) const = 0;
     EXPORT virtual std::tuple<bool, OTPassword&> HashSecret(

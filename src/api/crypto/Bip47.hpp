@@ -53,10 +53,10 @@ class Bip47 : virtual public crypto::Bip47
 public:
     Bip47Identity Bip47ID(const Nym& local, const proto::ContactItemType chain)
         const override;
-    std::tuple<bool, OTPassword&> EphemeralPrivkey(
+    std::tuple<bool, OTPassword&> LocalPaymentCode(
         const Bip47Identity& local,
         const std::uint32_t& index) const override;
-    std::tuple<bool, OTData> EphemeralPubkey(
+    std::tuple<bool, OTData> RemotePaymentCode(
         const PaymentCode& remote,
         const std::uint32_t& index) const override;
     std::tuple<bool, OTPassword&> HashSecret(

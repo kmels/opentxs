@@ -145,7 +145,7 @@ std::string Bip47::PubKeyAddress(
     return OT::App().Crypto().Encode().IdentifierEncode(preimage);
 }
 
-std::tuple<bool, OTPassword&> Bip47::EphemeralPrivkey(
+std::tuple<bool, OTPassword&> Bip47::LocalPaymentCode(
     const Bip47Identity& account,
     const std::uint32_t& index) const
 {
@@ -187,7 +187,7 @@ std::tuple<bool, OTPassword&> Bip47::EphemeralPrivkey(
     return result;
 }
 
-std::tuple<bool, OTData> Bip47::EphemeralPubkey(
+std::tuple<bool, OTData> Bip47::RemotePaymentCode(
     const PaymentCode& remote,
     const std::uint32_t& index) const
 {
@@ -270,10 +270,10 @@ proto::AsymmetricKey Bip47::IncomingPubkey(
     // public key derived remote's payment code,
     // and private keys derived from the ith local's payment code
 
-    auto [privk_ok, a] = EphemeralPrivkey(acc, index);
+    auto [privk_ok, a] = LocalPaymentCode(acc, index);
     OT_ASSERT(privk_ok);
 
-    auto [pubk_ok, B] = EphemeralPubkey(remote, 0);
+    auto [pubk_ok, B] = RemotePaymentCode(remote, 0);
     OT_ASSERT(pubk_ok);
 
     auto [ecdh_success, Sx] = SecretPoint(a, B);
@@ -314,12 +314,12 @@ proto::AsymmetricKey Bip47::OutgoingPubkey(
 
     // i. local selects the ith private key `a` derived from
     // m / 47' / coin' / nym' / i
-    auto [privk_ok, a] = EphemeralPrivkey(acc, 0);
+    auto [privk_ok, a] = LocalPaymentCode(acc, 0);
     OT_ASSERT(privk_ok);
 
     // ii. local derives the ith public key `B` derived from remote's payment
     // code m/47'/0'/0'/index
-    auto [pubk_ok, B] = EphemeralPubkey(remote, index);
+    auto [pubk_ok, B] = RemotePaymentCode(remote, index);
     OT_ASSERT(pubk_ok);
 
     // iii. local calculates a secret point:
