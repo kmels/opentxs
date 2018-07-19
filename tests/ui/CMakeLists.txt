@@ -3,7 +3,9 @@ set(name unittests-opentxs-ui)
 
 set(cxx-sources
         main.cpp
-        Test_ContactList.cpp
+        #Test_ContactList.cpp
+        #Test_ContactList_Duplicates.cpp
+        Test_ContactList_Multiple.cpp
         ${PROJECT_SOURCE_DIR}/tests/OTTestEnvironment.cpp
         )
 
