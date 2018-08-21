@@ -6,6 +6,12 @@
 #include "opentxs/opentxs.hpp"
 
 #include <gtest/gtest.h>
+#include <opentxs/api/Factory.hpp>
+#include <opentxs/Types.hpp>
+#include <opentxs/api/Factory.hpp>
+#include <opentxs/api/Factory.hpp>
+#include <opentxs/api/Factory.hpp>
+#include <opentxs/api/Factory.hpp>
 
 using namespace opentxs;
 
@@ -33,9 +39,9 @@ public:
     const Identifier& server_id_;
 
     Test_Basic()
-        : alice_wallet_(OT::App().StartClient(args_, 0))
-        , bob_wallet_(OT::App().StartClient(args_, 1))
-        , server_(OT::App().StartServer(args_, 0, true))
+        : alice_wallet_(OT::App().StartClient(args_, 2))
+        , bob_wallet_(OT::App().StartClient(args_, 3))
+        , server_(OT::App().StartServer(args_, 1, true))
         , server_id_(server_.ID())
     {
         if (false == init_) { init(); }
@@ -78,7 +84,7 @@ public:
 
         import_server_contract(*server_contract_, alice_wallet_);
         import_server_contract(*server_contract_, bob_wallet_);
-
+        
         init_ = true;
     }
 
@@ -101,7 +107,12 @@ const std::shared_ptr<const ServerContract> Test_Basic::server_contract_{
     nullptr};
 
 TEST_F(Test_Basic, add_payment_codes)
-{
+{    
+    // 1. A test that simulates Alice and Bob both setting up stash wallet creation for the first time up to the point at which the main screen is displayed.
+    
+    alice_wallet_.Sync().Refresh();
+    bob_wallet_.Sync().Refresh();
+
     auto alice = alice_wallet_.Wallet().mutable_Nym(alice_nym_id_);
     auto bob = bob_wallet_.Wallet().mutable_Nym(bob_nym_id_);
 
@@ -116,18 +127,45 @@ TEST_F(Test_Basic, add_payment_codes)
 
     alice_wallet_.Sync().Refresh();
     bob_wallet_.Sync().Refresh();
+    
+    const auto servers = alice_wallet_.Wallet().ServerList();
 
-    while (false == alice_wallet_.Exec().IsNym_RegisteredAtServer(alice_nym_id_->str(), server_id_->str())) {
-        opentxs::Log::Sleep(std::chrono::milliseconds(100));
-    }
-
-    while (false == bob_wallet_.Exec().IsNym_RegisteredAtServer(bob_nym_id_->str(), server_id_->str())) {
-        opentxs::Log::Sleep(std::chrono::milliseconds(100));
-    }
-}
-
-TEST_F(Test_Basic, widget_callback)
-{
+    const auto& itr = servers.begin();
+    ASSERT_STREQ(itr->first.c_str(), server_id_.str().c_str());
+    ASSERT_STREQ("localhost", itr->second.c_str());
+    ASSERT_EQ(1, servers.size());
+    
+    alice_wallet_.Sync().Refresh();
+    bob_wallet_.Sync().Refresh();
+    
+    auto task = alice_wallet_.Sync().RegisterNym(alice_nym_id_, server_id_, false, true);
+    ASSERT_NE("", task->str());
+    
+    //alice_wallet_.Sync().Refresh();
+    
+    //while (false == alice_wallet_.Exec().IsNym_RegisteredAtServer(alice_nym_id_->str(), server_id_.str())) {
+    //    opentxs::Log::Sleep(std::chrono::milliseconds(50));
+    //}
+    
+    //ASSERT_TRUE(alice_wallet_.Exec().IsNym_RegisteredAtServer(alice_nym_id_->str(), server_id_.str()));
+    //ASSERT_TRUE(bob_wallet_.Exec().IsNym_RegisteredAtServer(bob_nym_id_->str(), server_id_.str()));
+    
+    // Get UI Profile
+    ASSERT_EQ(1, alice_wallet_.Exec().GetNymCount());
+    auto nym_ = alice_wallet_.Exec().GetNym_ID(0);
+    auto& alice_ui_profile_ = alice_wallet_.UI().Profile(Identifier::Factory(nym_));
+    
+    EXPECT_STREQ("",alice_ui_profile_.PaymentCode().c_str()); 
+    EXPECT_STREQ(alice_name_.c_str(), alice_ui_profile_.DisplayName().c_str());
+    
+    const auto& profile_section_ = alice_ui_profile_.First();
+    ASSERT_FALSE(profile_section_->Valid());
+    ASSERT_STREQ("", profile_section_->Name("en").c_str());
+    
+    auto has_next_ = !profile_section_->Last();
+    ASSERT_FALSE(has_next_);
+    
+    // todo
     auto widgetCallback = opentxs::network::zeromq::ListenCallback::Factory(
           [=](const opentxs::network::zeromq::Message& incoming)
               -> void { this->widget_updated_alice(incoming);});
@@ -136,7 +174,6 @@ TEST_F(Test_Basic, widget_callback)
     const auto started = widgetSocket->Start(alice_wallet_.Endpoints().WidgetUpdate());
 
     EXPECT_TRUE(started);
-
-
 }
+
 }  // namespace
