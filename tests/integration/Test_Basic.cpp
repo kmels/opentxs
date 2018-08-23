@@ -241,8 +241,22 @@ public:
 
         EXPECT_EQ(expectedNymboxItems, transactionMap.size());
     }
-};
 
+    void widget_updated_alice(const opentxs::network::zeromq::Message& incoming)
+    {
+        std::cout << "New message received\n";
+        const auto& body_frame_section_ = incoming.Body();
+        std::cout << "Body frame section size: " << body_frame_section_.size() << "\n";
+
+        if (body_frame_section_.size() > 0) {
+            const auto& body_frame_ = body_frame_section_ .at(0);
+            const std::string frame = static_cast<const char*>(body_frame_.data());
+            std::cout << "Frame 0: " << frame << "\n";
+        }
+        EXPECT_EQ(1, body_frame_section_.size());
+    }
+};
+  
 const opentxs::ArgList Test_Basic::args_{
     {{OPENTXS_ARG_STORAGE_PLUGIN, {"mem"}}}};
 const std::string Test_Basic::SeedA_{""};
@@ -1897,4 +1911,197 @@ TEST_F(Test_Basic, getNymbox_after_processInbox)
         NO_TRANSACTION,
         0);
 }
+
+// A test that simulates Alice and Bob both setting up stash wallet creation for the first time up to the point at which the main screen is displayed.
+TEST_F(Test_Basic, startStashWallet) {
+    
+    ASSERT_TRUE(true);
+    //client_1_.Sync().Refresh(); client_2_.Sync().Refresh();
+
+    ASSERT_TRUE(client_1_.Exec().LoadWallet()); 
+    ASSERT_TRUE(client_2_.Exec().LoadWallet());
+    
+    auto alice = client_1_.Wallet().mutable_Nym(alice_nym_id_);
+    auto bob = client_2_.Wallet().mutable_Nym(bob_nym_id_);
+
+    EXPECT_EQ(proto::CITEMTYPE_INDIVIDUAL, alice.Type());
+    EXPECT_EQ(proto::CITEMTYPE_INDIVIDUAL, bob.Type());
+
+    auto aliceScopeSet = alice.SetScope(proto::CITEMTYPE_INDIVIDUAL, "Alice", true);
+    auto bobScopeSet = bob.SetScope(proto::CITEMTYPE_INDIVIDUAL, "Bob", true);
+
+    EXPECT_TRUE(aliceScopeSet);
+    EXPECT_TRUE(bobScopeSet);
+
+    //while (false == client_1_.Exec().IsNym_RegisteredAtServer(alice_nym_id_->str(), server_id_.str())) {
+    //    opentxs::Log::Sleep(std::chrono::milliseconds(50));
+    //}
+    
+    EXPECT_TRUE(client_1_.Exec().IsNym_RegisteredAtServer(alice_nym_id_->str(), server_id_.str()));
+    EXPECT_TRUE(client_2_.Exec().IsNym_RegisteredAtServer(bob_nym_id_->str(), server_id_.str()));
+
+    // subscribe to socket
+    
+    const auto& alice_zmq_ = client_1_.ZMQ().Context();
+    const auto& bob_zmq_ = client_1_.ZMQ().Context();
+    
+    auto alice_callback_ = opentxs::network::zeromq::ListenCallback::Factory(
+          [=](const opentxs::network::zeromq::Message& incoming)
+              -> void { this->widget_updated_alice(incoming);});
+    auto alice_widget_socket_ = alice_zmq_.SubscribeSocket(alice_callback_);
+
+    const auto started = alice_widget_socket_->Start(client_1_.Endpoints().WidgetUpdate());
+    EXPECT_TRUE(started);
+    
+    // get the first nym
+    ASSERT_EQ(1, client_1_.Exec().GetNymCount());
+    auto alice_nym_ = client_1_.Exec().GetNym_ID(0);
+    ASSERT_STREQ(alice_nym_id_->str().c_str(), alice_nym_.c_str());
+    
+    ASSERT_EQ(1, client_2_.Exec().GetNymCount());
+    auto bob_nym_ = client_2_.Exec().GetNym_ID(0);
+    ASSERT_STREQ(bob_nym_id_->str().c_str(), bob_nym_.c_str());
+    
+    // get ui profile
+    auto& alice_ui_profile_ = client_1_.UI().Profile(alice_nym_id_);
+    auto& bob_ui_profile_ = client_2_.UI().Profile(bob_nym_id_);
+    
+    EXPECT_STREQ("",alice_ui_profile_.PaymentCode().c_str()); 
+    EXPECT_STREQ("",bob_ui_profile_.PaymentCode().c_str()); 
+    
+    EXPECT_STREQ("Alice", alice_ui_profile_.DisplayName().c_str());
+    EXPECT_STREQ("Bob", bob_ui_profile_.DisplayName().c_str());
+    
+    const auto& alice_first_section_ = alice_ui_profile_.First();
+    const auto& bob_first_section_ = bob_ui_profile_.First();
+    
+    ASSERT_FALSE(alice_first_section_->Valid());
+    ASSERT_FALSE(bob_first_section_->Valid());
+    
+    ASSERT_STREQ("", alice_first_section_->Name("en").c_str());
+    ASSERT_STREQ("", bob_first_section_->Name("en").c_str());
+    
+    auto has_next_ = !alice_first_section_->Last();
+    ASSERT_FALSE(has_next_);
+    
+    has_next_ = !bob_first_section_->Last();
+    ASSERT_FALSE(has_next_);
+    
+    // get activity summary
+    ASSERT_EQ(1, client_1_.Exec().GetNymCount());
+    ASSERT_EQ(1, client_2_.Exec().GetNymCount());
+    
+    const auto& alice_activity_summary_ = client_1_.UI().ActivitySummary(alice_nym_id_);
+    const auto& bob_activity_summary_ = client_2_.UI().ActivitySummary(bob_nym_id_);
+    
+    const auto& alice_first_activity_summary_ = alice_activity_summary_.First();
+    const auto& bob_first_activity_summary_ = alice_activity_summary_.First();
+    
+    ASSERT_FALSE(alice_first_activity_summary_->Valid());
+    ASSERT_FALSE(bob_first_activity_summary_->Valid());
+    
+    // update contact list
+    const auto& alice_contacts_ = client_1_.UI().ContactList(alice_nym_id_);
+    const auto& bob_contacts_ = client_2_.UI().ContactList(bob_nym_id_);
+    
+    const auto& alice_first_contact_ = alice_contacts_.First();
+    const auto& bob_first_contact_ = bob_contacts_.First();
+    
+    ASSERT_TRUE(alice_first_contact_->Valid());
+    ASSERT_TRUE(bob_first_contact_->Valid());
+    
+    EXPECT_STRNE("", alice_first_contact_->ContactID().c_str());
+    EXPECT_STRNE("", bob_first_contact_->ContactID().c_str());
+    
+    EXPECT_TRUE(alice_first_contact_->DisplayName() == "Alice" || alice_first_contact_->DisplayName() == "Owner");
+    EXPECT_TRUE(bob_first_contact_->DisplayName() == "Bob" || bob_first_contact_->DisplayName() == "Owner");
+    
+    EXPECT_TRUE(alice_first_contact_->Valid());
+    EXPECT_TRUE(bob_first_contact_->Valid());
+    
+    EXPECT_STREQ("",alice_first_contact_->ImageURI().c_str());
+    EXPECT_STREQ("",bob_first_contact_->ImageURI().c_str());
+    
+    EXPECT_STREQ("ME",alice_first_contact_->Section().c_str());
+    EXPECT_STREQ("ME",bob_first_contact_->Section().c_str());
+    
+    const auto& next_alice_contact_ = alice_contacts_.Next();
+    const auto& next_bob_contact_ = bob_contacts_.Next();
+    
+    has_next_ = !next_alice_contact_->Last();
+    ASSERT_FALSE(has_next_);
+    
+    has_next_ = !next_bob_contact_->Last();
+    ASSERT_FALSE(has_next_);
+    
+    // get BTC payables
+    const auto& alice_btc_payables_ = client_1_.UI().PayableList(alice_nym_id_, proto::CITEMTYPE_BTC);
+    const auto& bob_btc_payables_ = client_2_.UI().PayableList(bob_nym_id_, proto::CITEMTYPE_BTC);
+    
+    EXPECT_TRUE(alice_btc_payables_.First()->Last());
+    EXPECT_TRUE(bob_btc_payables_.First()->Last());
+    
+    EXPECT_FALSE(alice_btc_payables_.First()->Valid());
+    EXPECT_FALSE(bob_btc_payables_.First()->Valid());
+    
+    // get BCH payables
+    const auto& alice_bch_payables_ = client_1_.UI().PayableList(alice_nym_id_, proto::CITEMTYPE_BCH);
+    const auto& bob_bch_payables_ = client_2_.UI().PayableList(bob_nym_id_, proto::CITEMTYPE_BCH);
+    
+    EXPECT_TRUE(alice_bch_payables_.First()->Last());
+    EXPECT_TRUE(bob_bch_payables_.First()->Last());
+    
+    EXPECT_FALSE(alice_bch_payables_.First()->Valid());
+    EXPECT_FALSE(bob_bch_payables_.First()->Valid());
+    
+    // get account summary
+    const auto& alice_accounts_ = client_1_.UI().AccountSummary(alice_nym_id_, proto::CITEMTYPE_BCH);
+    const auto& bob_accounts_ = client_2_.UI().AccountSummary(bob_nym_id_, proto::CITEMTYPE_BCH);
+    
+    const auto& alice_first_account_ = alice_accounts_.First();
+    const auto& bob_first_account_ = bob_accounts_.First();
+    
+    EXPECT_FALSE(alice_first_account_->Last());
+    EXPECT_FALSE(bob_first_account_->Last());
+    
+    EXPECT_FALSE(alice_first_account_->Valid());
+    EXPECT_FALSE(bob_first_account_->Valid());
+    
+    EXPECT_STREQ("", alice_first_account_->Name().c_str());
+    EXPECT_STREQ("", bob_first_account_->Name().c_str());
+    
+    EXPECT_FALSE(alice_first_account_->ConnectionState());
+    EXPECT_FALSE(bob_first_account_->ConnectionState());
+    
+    EXPECT_STREQ("", alice_first_account_->Debug().c_str());
+    EXPECT_STREQ("", bob_first_account_->Debug().c_str());
+    
+    const auto& alice_next_account_ = alice_accounts_.Next();
+    const auto& bob_next_account_ = bob_accounts_.Next();
+    
+    EXPECT_FALSE(alice_next_account_->Valid());
+    EXPECT_FALSE(alice_next_account_->Valid());
+    
+    has_next_ = !alice_next_account_->Last();
+    EXPECT_TRUE(has_next_);
+    
+    int i = 0;
+    int max = 5000;
+    
+    while (has_next_ && i < max) {
+        const auto& alice_next_account_ = alice_accounts_.Next();
+        EXPECT_FALSE(alice_next_account_->Valid());
+        EXPECT_STREQ("", alice_next_account_->Name().c_str());
+        has_next_ = !alice_next_account_->Last();
+        i++;
+    }
+    
+    //ASSERT_NE(5000, i);
+    
+    has_next_ = !bob_next_account_->Last();
+    EXPECT_TRUE(has_next_);
+    
+    opentxs::Log::Sleep(std::chrono::milliseconds(2000));
+}
+
 }  // namespace
