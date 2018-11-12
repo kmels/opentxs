@@ -165,7 +165,7 @@ if(OT_BUNDLED_SECP256K1)
     PROPERTIES
     EXTERNAL_OBJECT true
     GENERATED true
-  )
+    )
   add_dependencies(opentxs-crypto-library secp256k1)
 endif()
 
@@ -282,28 +282,55 @@ if(OT_SHARED)
     ${CMAKE_DL_LIBS}
   )
 
-  if(NOT OT_BUNDLED_OPENTXS_PROTO)
-    target_link_libraries(${MODULE_NAME} PRIVATE ${OPENTXS_PROTO_LIBRARIES})
+  if(IOS OR NOT OT_BUNDLED_OPENTXS_PROTO)
+    if (IOS)
+      #message(FATAL_ERROR "BUILD_static ${OPENTXS_PROTO_LIBRARIES}")      
+      #target_link_libraries(${MODULE_NAME} PRIVATE /Users/carlos/statusreport-protobuf/protobuf/lib/libprotobuf-lite.a)
+      target_link_libraries(${MODULE_NAME} PRIVATE /usr/local/lib/libopentxs-proto.a)
+      #target_link_libraries(${MODULE_NAME} PRIVATE ${OPENTXS_PROTO_LIBRARIES})
+    else()
+      target_link_libraries(${MODULE_NAME} PRIVATE ${OPENTXS_PROTO_LIBRARIES})
+    endif()
+  endif()
+  
+  #/Users/carlos/statusreport-protobuf/protobuf/platform/iossim_x86_64/lib/libprotobuf-lite.a
+  if(IOS OR NOT OT_BUNDLED_PROTOBUF)
+    if (IOS)
+      if (NOT PROTOBUF_LITE_LIBRARY_IOS)
+         message(FATAL_ERROR "Missing: PROTOBUF_LITE_LIBRARY_IOS for IOS")
+      else()
+	 target_link_libraries(${MODULE_NAME} PRIVATE ${PROTOBUF_LITE_LIBRARY_IOS})
+      endif()
+    endif()
+    else ()
+      target_link_libraries(${MODULE_NAME} PRIVATE ${PROTOBUF_LITE_LIBRARIES})
   endif()
 
-  if(NOT OT_BUNDLED_PROTOBUF)
-    target_link_libraries(${MODULE_NAME} PRIVATE ${PROTOBUF_LITE_LIBRARIES})
-  endif()
-
-  if(NOT OT_BUNDLED_SODIUM)
+  if(IOS OR NOT OT_BUNDLED_SODIUM)    
     target_link_libraries(${MODULE_NAME} PRIVATE ${SODIUM_LIBRARY})
   endif()
 
-  if (LIBSECP256K1_EXPORT AND NOT OT_BUNDLED_SECP256K1)
+  if (LIBSECP256K1_EXPORT AND (IOS OR NOT OT_BUNDLED_SECP256K1))
     target_link_libraries(${MODULE_NAME} PRIVATE ${LIBSECP256K1_LIBRARY})
   endif()
 
   if (LIBBITCOIN_EXPORT)
+    if (IOS)
+      message(FATAL_ERROR "IOS IS UNSUPPORTED FOR LIBBITCOIN")
+    endif()
     target_link_libraries(${MODULE_NAME} PRIVATE ${LIBBITCOIN_LIBRARIES})
   endif()
 
-  if(NOT OT_BUNDLED_LIBZMQ)
-    target_link_libraries(${MODULE_NAME} PRIVATE ${ZMQ_LIBRARIES})
+  if(IOS OR NOT OT_BUNDLED_LIBZMQ)
+    if (IOS)
+      if (NOT ZMQ_LIBRARY)
+        message(FATAL_ERROR "Missing: ZMQ_LIBRARY for IOS")
+      else()
+         target_link_libraries(${MODULE_NAME} PRIVATE ${ZMQ_LIBRARY})
+      endif()
+    else()
+	target_link_libraries(${MODULE_NAME} PRIVATE ${ZMQ_LIBRARIES})
+    endif()
   endif()
 
   if(OT_DHT)
@@ -319,7 +346,7 @@ if(OT_SHARED)
   endif()
 
   if (OT_STORAGE_FS)
-      target_link_libraries(${MODULE_NAME} PRIVATE ${Boost_SYSTEM_LIBRARIES} ${Boost_FILESYSTEM_LIBRARIES} ${Boost_IOSTREAMS_LIBRARIES})
+      target_link_libraries(${MODULE_NAME}_static PRIVATE ${Boost_SYSTEM_LIBRARIES} ${Boost_FILESYSTEM_LIBRARIES} ${Boost_IOSTREAMS_LIBRARIES})
   endif()
 
   install(TARGETS ${MODULE_NAME}
@@ -351,28 +378,51 @@ if(OT_STATIC)
     ${CMAKE_DL_LIBS}
   )
 
-  if(NOT OT_BUNDLED_OPENTXS_PROTO)
-    target_link_libraries(${MODULE_NAME}_static PRIVATE ${OPENTXS_PROTO_LIBRARIES})
+  if(IOS OR NOT OT_BUNDLED_OPENTXS_PROTO)
+    if (IOS)
+      #target_link_libraries(${MODULE_NAME}_static PRIVATE /Users/carlos/statusreport-protobuf/protobuf/lib/libprotobuf-lite.a)
+      #target_link_libraries(${MODULE_NAME}_static PRIVATE ${OPENTXS_PROTO_LIBRARIES})
+      target_link_libraries(${MODULE_NAME}_static PRIVATE /usr/local/lib/libopentxs-proto.a)
+    else()
+      target_link_libraries(${MODULE_NAME}_static PRIVATE ${OPENTXS_PROTO_LIBRARIES})
+    endif()
   endif()
 
-  if(NOT OT_BUNDLED_PROTOBUF)
-    target_link_libraries(${MODULE_NAME}_static PRIVATE ${PROTOBUF_LITE_LIBRARIES})
+  if(IOS OR NOT OT_BUNDLED_PROTOBUF)
+    if (IOS)
+      if (NOT PROTOBUF_LITE_LIBRARY_IOS)
+         message(FATAL_ERROR "Missing: PROTOBUF_LITE_LIBRARY_IOS for IOS")
+      else()
+	 target_link_libraries(${MODULE_NAME}_static PRIVATE ${PROTOBUF_LITE_LIBRARY_IOS})
+      endif()
+    endif()
+    else ()
+      target_link_libraries(${MODULE_NAME}_static PRIVATE ${PROTOBUF_LITE_LIBRARIES})
   endif()
-
-  if(NOT OT_BUNDLED_SODIUM)
+  
+  #/Users/carlos/libsodium-1.0.16/libsodium-ios/lib/libsodium.a
+  if(IOS OR NOT OT_BUNDLED_SODIUM)    
     target_link_libraries(${MODULE_NAME}_static PRIVATE ${SODIUM_LIBRARY})
   endif()
 
-  if (LIBSECP256K1_EXPORT AND NOT OT_BUNDLED_SECP256K1)
+  if (LIBSECP256K1_EXPORT AND (IOS OR NOT OT_BUNDLED_SECP256K1))
     target_link_libraries(${MODULE_NAME}_static PRIVATE ${LIBSECP256K1_LIBRARY})
   endif()
 
   if (LIBBITCOIN_EXPORT)
     target_link_libraries(${MODULE_NAME}_static PRIVATE ${LIBBITCOIN_LIBRARIES})
   endif()
-
-  if(NOT OT_BUNDLED_LIBZMQ)
-    target_link_libraries(${MODULE_NAME}_static PRIVATE ${ZMQ_LIBRARIES})
+  
+  if(IOS OR NOT OT_BUNDLED_LIBZMQ)
+    if (IOS)
+      if (NOT ZMQ_LIBRARY)
+        message(FATAL_ERROR "Missing: ZMQ_LIBRARY for IOS")
+      else()
+         target_link_libraries(${MODULE_NAME}_static PRIVATE ${ZMQ_LIBRARY})
+      endif()
+    else()
+	target_link_libraries(${MODULE_NAME}_static PRIVATE ${ZMQ_LIBRARIES})
+    endif()
   endif()
 
   if(OT_DHT)
@@ -384,11 +434,11 @@ if(OT_STATIC)
   endif()
 
   if (OT_STORAGE_LMDB)
-    target_link_libraries(${MODULE_NAME}_static PRIVATE ${LMDB_LIBRARIES})
+     target_link_libraries(${MODULE_NAME}_static PRIVATE ${LMDB_LIBRARIES})
   endif()
 
   if (OT_STORAGE_FS)
-      target_link_libraries(${MODULE_NAME}_static PRIVATE ${Boost_SYSTEM_LIBRARIES} ${Boost_FILESYSTEM_LIBRARIES} ${Boost_IOSTREAMS_LIBRARIES})
+     target_link_libraries(${MODULE_NAME}_static PRIVATE ${Boost_SYSTEM_LIBRARIES} ${Boost_FILESYSTEM_LIBRARIES} ${Boost_IOSTREAMS_LIBRARIES})
   endif()
 
   install(TARGETS ${MODULE_NAME}_static

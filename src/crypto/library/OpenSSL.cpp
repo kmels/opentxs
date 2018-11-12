@@ -76,11 +76,8 @@ extern "C" {
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 extern "C" {
-EVP_CIPHER_CTX* EVP_CIPHER_CTX_new() { return new EVP_CIPHER_CTX; }
 
 EVP_MD_CTX* EVP_MD_CTX_new() { return new EVP_MD_CTX; }
-
-void EVP_CIPHER_CTX_free(EVP_CIPHER_CTX* context) { delete context; }
 
 void EVP_MD_CTX_free(EVP_MD_CTX* context) { delete context; }
 }

@@ -8,9 +8,7 @@
 #if OT_CRYPTO_USING_OPENSSL
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 extern "C" {
-EVP_CIPHER_CTX* EVP_CIPHER_CTX_new();
 EVP_MD_CTX* EVP_MD_CTX_new();
-void EVP_CIPHER_CTX_free(EVP_CIPHER_CTX* context);
 void EVP_MD_CTX_free(EVP_MD_CTX* context);
 }
 #endif

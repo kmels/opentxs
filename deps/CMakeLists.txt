@@ -207,32 +207,47 @@ endif()
 
 if (OT_BUNDLED_PROTOBUF)
     set(bundled-protobuf-path "${CMAKE_CURRENT_BINARY_DIR}/protobuf/install/lib/libprotobuf-lite.a" CACHE INTERNAL "" FORCE)
-    include(ExternalProject)
-    ExternalProject_Add(
-        protobuf
-        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/protobuf
-        TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/tmp
-        STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/stamp
-        EXCLUDE_FROM_ALL 1
-        DOWNLOAD_COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/
-        DOWNLOAD_NO_PROGRESS 1
-        UPDATE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/autogen.sh
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/configure --prefix ${CMAKE_CURRENT_BINARY_DIR}/protobuf/install ${OT_HOST} ${OT_SYSROOT} --enable-shared=no --enable-static=yes --with-pic --enable-cross-compile --with-pthreads --with-protoc=protoc --with-zlib --with-zlib-include=${ZLIB_INCLUDE_DIRS} --with-zlib-lib=${ZLIB_LIBRARIES} --disable-maintainer-mode --enable-fast-install ${OT_ANDROID_LOG}
-        BUILD_COMMAND make "${OT_MAKEOPTS_OVERRIDE}"
-        BUILD_IN_SOURCE 1
-        BUILD_BYPRODUCTS "${bundled-protobuf-path}"
-        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/install
-        INSTALL_COMMAND make install
-    )
 
-    ExternalProject_Add_Step(
-        protobuf
-        checkout
-        COMMAND git -C ${CMAKE_CURRENT_SOURCE_DIR}/protobuf checkout-index --all --force --prefix=${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/
-        DEPENDERS update
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/protobuf
-    )
+    include(ExternalProject)
+
+    IF (IOS)        
+        ExternalProject_Add(
+		protobuf
+		PREFIX ${CMAKE_CURRENT_BINARY_DIR}/protobuf
+        	TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/tmp
+        	STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/stamp
+        	EXCLUDE_FROM_ALL 1
+        	DOWNLOAD_COMMAND git clone https://gist.github.com/StatusReport/2e9744ed40ba50745531f0a61d93a2e3 ${CMAKE_CURRENT_BINARY_DIR}/protobuf/ios/ && chmod u+x ${CMAKE_CURRENT_BINARY_DIR}/protobuf/ios/*.sh
+        	DOWNLOAD_NO_PROGRESS 0
+        	UPDATE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/protobuf/ios/build-protobuf.sh
+        	SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/ios
+	)
+    else()	
+	ExternalProject_Add(
+		protobuf
+        	PREFIX ${CMAKE_CURRENT_BINARY_DIR}/protobuf
+        	TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/tmp
+        	STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/stamp
+        	EXCLUDE_FROM_ALL 1
+        	DOWNLOAD_COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/
+        	DOWNLOAD_NO_PROGRESS 1
+        	UPDATE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/autogen.sh
+        	SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src
+        	CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/configure --prefix ${CMAKE_CURRENT_BINARY_DIR}/protobuf/install ${OT_HOST} ${OT_SYSROOT} --enable-shared=no --enable-static=yes --with-pic --enable-cross-compile --with-pthreads --with-protoc=protoc --with-zlib --with-zlib-include=${ZLIB_INCLUDE_DIRS} --with-zlib-lib=${ZLIB_LIBRARIES} --disable-maintainer-mode --enable-fast-install ${OT_ANDROID_LOG}
+        	BUILD_COMMAND make "${OT_MAKEOPTS_OVERRIDE}"
+        	BUILD_IN_SOURCE 1
+        	BUILD_BYPRODUCTS "${bundled-protobuf-path}"
+        	INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/install
+        	INSTALL_COMMAND make install
+    	)
+	ExternalProject_Add_Step(
+		protobuf
+        	checkout
+        	COMMAND git -C ${CMAKE_CURRENT_SOURCE_DIR}/protobuf checkout-index --all --force --prefix=${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/
+        	DEPENDERS update
+        	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/protobuf
+    	)
+    endif()
 else()
     set(bundled-protobuf-path "" CACHE INTERNAL "" FORCE)
 endif()
@@ -361,34 +376,59 @@ else()
     set(bundled-zmq-path "" CACHE INTERNAL "" FORCE)
 endif()
 
-if (OT_BUNDLED_SECP256K1)
-    set(bundled-secp256k1-path "${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install/lib/libsecp256k1.a" CACHE INTERNAL "" FORCE)
-    include(ExternalProject)
-    ExternalProject_Add(
-        secp256k1
-        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/secp256k1
-        TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/tmp
-        STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/stamp
-        EXCLUDE_FROM_ALL 1
-        DOWNLOAD_COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/
-        DOWNLOAD_NO_PROGRESS 1
-        UPDATE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/autogen.sh
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/configure --prefix ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install ${OT_HOST} ${OT_SYSROOT} --enable-shared=no --enable-static=yes --with-pic --disable-openssl-tests --enable-experimental --disable-exhaustive-tests --enable-module-ecdh --enable-module-recovery --disable-jni --with-bignum=no --with-asm=no --disable-tests --disable-benchmark
-        BUILD_COMMAND make "${OT_MAKEOPTS_OVERRIDE}"
-        BUILD_IN_SOURCE 1
-        BUILD_BYPRODUCTS "${bundled-secp256k1-path}"
-        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install
-        INSTALL_COMMAND make install
-    )
+if (OT_BUNDLED_SECP256K1)   
+    IF (IOS)
+        set(bundled-secp256k1-path "/Users/carlos/tmp/secp256k1/libsecp256k1-ios/lib/libsecp256k1.a" CACHE INTERNAL "" FORCE)	
+    	include(ExternalProject)
+    
+	ExternalProject_Add(
+    	    secp256k1
+            PREFIX ${CMAKE_CURRENT_BINARY_DIR}/secp256k1
+            #TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/tmp
+            #STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/stamp
+            #EXCLUDE_FROM_ALL 1
+            #DOWNLOAD_COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/
+	    DOWNLOAD_COMMAND git clone https://gist.github.com/StatusReport/2e9744ed40ba50745531f0a61d93a2e3 ${CMAKE_CURRENT_BINARY_DIR}/protobuf/ios/ && chmod u+x ${CMAKE_CURRENT_BINARY_DIR}/protobuf/ios/*.sh
+            #DOWNLOAD_NO_PROGRESS 1
+            #UPDATE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/autogen.sh
+            #SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src
+            #CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/configure --prefix ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install ${OT_HOST} ${OT_SYSROOT} --enable-shared=no --enable-static=yes --with-pic --disable-openssl-tests --enable-experimental --disable-exhaustive-tests --enable-module-ecdh --enable-module-recovery --disable-jni --with-bignum=no --with-asm=no --disable-tests --disable-benchmark
+            #BUILD_COMMAND make "${OT_MAKEOPTS_OVERRIDE}"
+            #BUILD_IN_SOURCE 1
+            #BUILD_BYPRODUCTS "${bundled-secp256k1-path}"
+            #INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install
+            #INSTALL_COMMAND make install
+    	    )
+    else()
+        set(bundled-secp256k1-path "${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install/lib/libsecp256k1.a" CACHE INTERNAL "" FORCE)
+    	include(ExternalProject)
+    
+        ExternalProject_Add(
+    	    secp256k1
+            PREFIX ${CMAKE_CURRENT_BINARY_DIR}/secp256k1
+            TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/tmp
+            STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/stamp
+            EXCLUDE_FROM_ALL 1
+            DOWNLOAD_COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/
+            DOWNLOAD_NO_PROGRESS 1
+            UPDATE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/autogen.sh
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src
+            CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/configure --prefix ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install ${OT_HOST} ${OT_SYSROOT} --enable-shared=no --enable-static=yes --with-pic --disable-openssl-tests --enable-experimental --disable-exhaustive-tests --enable-module-ecdh --enable-module-recovery --disable-jni --with-bignum=no --with-asm=no --disable-tests --disable-benchmark
+            BUILD_COMMAND make "${OT_MAKEOPTS_OVERRIDE}"
+            BUILD_IN_SOURCE 1
+            BUILD_BYPRODUCTS "${bundled-secp256k1-path}"
+            INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/secp256k1/install
+            INSTALL_COMMAND make install
+    	    )
 
-    ExternalProject_Add_Step(
-        secp256k1
-        checkout
-        COMMAND git -C ${CMAKE_CURRENT_SOURCE_DIR}/secp256k1 checkout-index --all --force --prefix=${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/
-        DEPENDERS update
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/secp256k1
-    )
+	ExternalProject_Add_Step(
+		secp256k1
+        	checkout
+        	COMMAND git -C ${CMAKE_CURRENT_SOURCE_DIR}/secp256k1 checkout-index --all --force --prefix=${CMAKE_CURRENT_BINARY_DIR}/secp256k1/src/
+        	DEPENDERS update
+        	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/secp256k1
+    	)
+    endif()    
 else()
     set(bundled-secp256k1-path "" CACHE INTERNAL "" FORCE)
 endif()

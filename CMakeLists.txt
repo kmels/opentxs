@@ -6,9 +6,26 @@
 cmake_minimum_required(VERSION 3.5)
 project(opentxs)
 include(GNUInstallDirs)
+set(CMAKE_MACOSX_RPATH 1)
+
+if (IOS)
+   #if (string(FIND ${IOS_PLATFORM} SIMULATOR))
+   #elseif(string (REGEX_MATCH '^OS.*' ${IOS_PLATFORM} ))
+   #endif()
+endif()
+#set (CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS12.1.sdk")
+set (CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator12.1.sdk")
+
+#if (NOT OT_STORAGE_FS)
+#   add_definitions(-DOT_STORAGE_FS=FALSE)
+#endif()
+
+#if (NOT OT_STORAGE_LMDB)
+#   add_definitions(-DOT_STORAGE_LMDB=0)
+#endif()
 
 #-----------------------------------------------------------------------------
-if(NOT ANDROID)
+if(NOT (ANDROID))
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM LAST)
 find_package(Git)
 if(GIT_FOUND)
@@ -73,7 +90,7 @@ option(KEYRING_KWALLET     "Build with KWallet Keyring" OFF)
 option(KEYRING_FLATFILE    "Build with Flatfile Keyring" OFF)
 option(NO_PASSWORD         "Use default password for all prompts" OFF)
 
-if(ANDROID)
+if(ANDROID OR IOS)
   option(OT_STORAGE_FS       "Enable filesystem backend for storage" OFF)
   option(OT_STORAGE_SQLITE   "Enable sqlite backend for storage" ON)
   option(OT_STORAGE_LMDB     "Enable LMDB backend for storage" ON)
@@ -104,7 +121,7 @@ option(OT_CRYPTO_SHA2_PREFER_OPENSSL       "Use OpenSSL SHA2 implementation when
 option(OT_CASH_USING_LUCRE  "Enable Lucre support" ON)
 option(OT_LUCRE_DEBUG 		"Output Lucre debug info" OFF)
 
-if(ANDROID)
+if(ANDROID OR IOS)
   option(OT_SCRIPT_USING_CHAI  "Use chaiscript" OFF)
 else()
   option(OT_SCRIPT_USING_CHAI  "Use chaiscript" ON)
@@ -158,6 +175,9 @@ message(STATUS "General -------------------------------------")
 message(STATUS "opentxs version:        ${VERSION_STRING}")
 message(STATUS "CMake version:          ${CMAKE_VERSION}")
 message(STATUS "System:                 ${CMAKE_SYSTEM}")
+message(STATUS "Android:                ${ANDROID}")
+message(STATUS "IOS:                    ${IOS}")
+message(STATUS "Build type:             ${CMAKE_BUILD_TYPE}")
 message(STATUS "Processor:              ${CMAKE_SYSTEM_PROCESSOR}")
 
 message(STATUS "Verbose:                ${BUILD_VERBOSE}")
@@ -530,6 +550,10 @@ if(ANDROID)
   add_definitions(-DANDROID)
 endif()
 
+if(IOS)
+  add_definitions(-DIOS)
+endif()
+
 #Network
 
 if(OT_DHT)
@@ -737,7 +761,7 @@ else()
 endif()
 
 #Script engines
-if(OT_SCRIPT_USING_CHAI AND NOT ANDROID AND NOT KEYRING_IOS)
+if(OT_SCRIPT_USING_CHAI AND NOT (ANDROID) AND NOT KEYRING_IOS)
   set(SCRIPT_CHAI_EXPORT 1)
 else()
   set(SCRIPT_CHAI_EXPORT 0)
