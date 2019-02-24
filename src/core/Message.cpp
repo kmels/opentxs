@@ -37,6 +37,12 @@
 #include <string>
 #include <utility>
 
+#ifndef WIN32
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED
+#endif
+
 #define OT_METHOD "opentxs::Message"
 
 #define ERROR_STRING "error"
@@ -527,7 +533,7 @@ std::int32_t Message::ProcessXMLNode(irr::io::IrrXMLReader*& xml)
 }
 
 std::int32_t Message::processXmlNodeAckReplies(
-    __attribute__((unused)) Message& m,
+    ATTR_UNUSED Message& m,
     irr::io::IrrXMLReader*& xml)
 {
     auto strDepth = String::Factory();
@@ -546,7 +552,7 @@ std::int32_t Message::processXmlNodeAckReplies(
 }
 
 std::int32_t Message::processXmlNodeAcknowledgedReplies(
-    __attribute__((unused)) Message& m,
+    ATTR_UNUSED Message& m,
     irr::io::IrrXMLReader*& xml)
 {
     LogOutput(OT_METHOD)(__FUNCTION__)(": SKIPPING DEPRECATED FIELD: "
@@ -559,7 +565,7 @@ std::int32_t Message::processXmlNodeAcknowledgedReplies(
 }
 
 std::int32_t Message::processXmlNodeNotaryMessage(
-    __attribute__((unused)) Message& m,
+    ATTR_UNUSED Message& m,
     irr::io::IrrXMLReader*& xml)
 {
     m_strVersion = String::Factory(xml->getAttributeValue("version"));

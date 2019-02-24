@@ -31,6 +31,12 @@
 
 #define OT_METHOD "opentxs::NymIDSource::"
 
+#ifndef WIN32
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED
+#endif
+
 namespace opentxs
 {
 
@@ -195,7 +201,7 @@ serializedNymIDSource NymIDSource::Serialize() const
 // except for the source proof
 bool NymIDSource::Verify(
     const proto::Credential& master,
-    __attribute__((unused)) const proto::Signature& sourceSignature) const
+    ATTR_UNUSED const proto::Signature& sourceSignature) const
 {
     serializedCredential serializedMaster;
     bool isSelfSigned, sameSource;
@@ -258,9 +264,9 @@ bool NymIDSource::Verify(
 }
 
 bool NymIDSource::Sign(
-    __attribute__((unused)) const MasterCredential& credential,
-    __attribute__((unused)) proto::Signature& sig,
-    __attribute__((unused)) const OTPasswordData* pPWData) const
+    ATTR_UNUSED const MasterCredential& credential,
+    ATTR_UNUSED proto::Signature& sig,
+    ATTR_UNUSED const OTPasswordData* pPWData) const
 {
     bool goodsig = false;
 

@@ -572,7 +572,7 @@ bool Sodium::Verify(
     const key::Asymmetric& theKey,
     const Data& signature,
     const proto::HashType hashType,
-    __attribute__((unused)) const OTPasswordData* pPWData) const
+    ATTR_UNUSED const OTPasswordData* pPWData) const
 {
     if (proto::HASHTYPE_BLAKE2B256 != hashType) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid hash function: ")(

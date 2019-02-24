@@ -2577,7 +2577,7 @@ bool OpenSSL::Sign(
     const proto::HashType hashType,
     Data& signature,  // output
     const OTPasswordData* pPWData,
-    __attribute__((unused)) const OTPassword* exportPassword) const
+    ATTR_UNUSED const OTPassword* exportPassword) const
 {
 
     auto& theTempKey = const_cast<key::Asymmetric&>(theKey);

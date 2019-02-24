@@ -187,7 +187,7 @@ bool OTCachedKey::GetMasterPassword(
 #ifndef OT_NO_PASSWORD
     bool bVerifyTwice
 #else
-    __attribute__((unused)) bool bVerifyTwice
+    ATTR_UNUSED bool bVerifyTwice
 #endif
     ) const
 {
