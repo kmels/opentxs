@@ -284,7 +284,7 @@ OTKeypair KeyCredential::new_key(
     const auto keyType = nymParameters.AsymmetricKeyType();
     const auto curve = crypto::AsymmetricProvider::KeyTypeToCurve(keyType);
 
-    OT_ASSERT(EcdsaCurve::ERROR != curve)
+    OT_ASSERT(EcdsaCurve::ZERO != curve)
     OT_ASSERT(nymParameters.Entropy())
 
     return derive_hd_keypair(

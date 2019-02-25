@@ -464,7 +464,7 @@ void OTAPI_Func::run()
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
 
     switch (type_) {

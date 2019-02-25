@@ -842,7 +842,7 @@ NetworkReplyMessage ServerContext::attempt_delivery(
                 .Flush();
             ++failure_counter_;
         } break;
-        case SendResult::ERROR: {
+        case SendResult::ZERO: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Malformed ")(
                 message.m_strCommand)
                 .Flush();
@@ -3980,7 +3980,7 @@ bool ServerContext::process_get_unit_definition_response(
 
             if (contract) { return (unitID->str() == serialized.id()); }
         } break;
-        case ContractType::ERROR:
+        case ContractType::ZERO:
         default: {
             auto serialized =
                 proto::DataToProto<proto::UnitDefinition>(raw.get());

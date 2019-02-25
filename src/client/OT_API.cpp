@@ -92,8 +92,12 @@
 #include <map>
 #include <memory>
 #include <string>
+
 #ifndef WIN32
 #include <unistd.h>
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED
 #endif
 
 #if defined(OPENTXS_HAVE_NETINET_IN_H)
@@ -814,8 +818,8 @@ std::string OT_API::Wallet_GetWords() const
 }
 
 std::string OT_API::Wallet_ImportSeed(
-    __attribute__((unused)) const OTPassword& words,
-    __attribute__((unused)) const OTPassword& passphrase) const
+    ATTR_UNUSED const OTPassword& words,
+    ATTR_UNUSED const OTPassword& passphrase) const
 {
     Lock lock(lock_);
 
@@ -6518,7 +6522,7 @@ CommandResult OT_API::issueBasket(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] = context.InitializeServerCommand(
         MessageType::issueBasket,
@@ -6834,7 +6838,7 @@ CommandResult OT_API::exchangeBasket(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -7048,7 +7052,7 @@ CommandResult OT_API::payDividend(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -7327,7 +7331,7 @@ CommandResult OT_API::withdrawVoucher(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -7614,7 +7618,7 @@ CommandResult OT_API::depositPaymentPlan(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -7750,7 +7754,7 @@ CommandResult OT_API::triggerClause(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = transactionNumber;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto payload = Armored::Factory();
 
@@ -7786,7 +7790,7 @@ CommandResult OT_API::activateSmartContract(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -8139,7 +8143,7 @@ CommandResult OT_API::cancelCronItem(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -8264,7 +8268,7 @@ CommandResult OT_API::issueMarketOffer(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -8609,7 +8613,7 @@ CommandResult OT_API::getMarketList(ServerContext& context) const
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] =
         context.InitializeServerCommand(MessageType::getMarketList, requestNum);
@@ -8642,7 +8646,7 @@ CommandResult OT_API::getMarketOffers(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] = context.InitializeServerCommand(
         MessageType::getMarketOffers, requestNum);
@@ -8682,7 +8686,7 @@ CommandResult OT_API::getMarketRecentTrades(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] = context.InitializeServerCommand(
         MessageType::getMarketRecentTrades, requestNum);
@@ -8715,7 +8719,7 @@ CommandResult OT_API::getNymMarketOffers(ServerContext& context) const
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] = context.InitializeServerCommand(
         MessageType::getNymMarketOffers, requestNum);
@@ -8751,7 +8755,7 @@ CommandResult OT_API::queryInstrumentDefinitions(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] = context.InitializeServerCommand(
         MessageType::queryInstrumentDefinitions, requestNum);
@@ -8780,7 +8784,7 @@ CommandResult OT_API::deleteAssetAccount(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
 
     {
@@ -8840,7 +8844,7 @@ CommandResult OT_API::usageCredits(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, message] = context.InitializeServerCommand(
         MessageType::usageCredits, NYM_ID_CHECK, requestNum);
@@ -8872,7 +8876,7 @@ CommandResult OT_API::sendNymObject(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto [newRequestNumber, request] = context.InitializeServerCommand(
         MessageType::sendNymMessage, recipientNymID, provided);
@@ -9501,7 +9505,7 @@ CommandResult OT_API::unregisterNym(ServerContext& context) const
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     auto message{api_.Factory().Message()};
     requestNum = m_pClient->ProcessUserCommand(
@@ -9536,7 +9540,7 @@ CommandResult OT_API::initiatePeerRequest(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -9591,7 +9595,7 @@ CommandResult OT_API::initiatePeerReply(
     auto& [status, reply] = result;
     requestNum = -1;
     transactionNum = 0;
-    status = SendResult::ERROR;
+    status = SendResult::ZERO;
     reply.reset();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();

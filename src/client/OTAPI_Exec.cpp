@@ -71,6 +71,13 @@
 
 #define OT_METHOD "opentxs::OTAPI_Exec::"
 
+#ifndef WIN32
+#include <unistd.h>
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED
+#endif
+
 namespace opentxs
 {
 
@@ -449,7 +456,7 @@ std::string OTAPI_Exec::NymIDFromPaymentCode(
 //
 std::string OTAPI_Exec::CreateNymLegacy(
     const std::int32_t& nKeySize,  // must be 1024, 2048, 4096, or 8192
-    __attribute__((unused))
+    ATTR_UNUSED
     const std::string& NYM_ID_SOURCE) const  // Can be empty.
 {
     if (0 >= nKeySize) {

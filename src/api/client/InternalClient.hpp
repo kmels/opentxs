@@ -84,7 +84,7 @@ struct Operation {
         const std::shared_ptr<Cheque> cheque) = 0;
     virtual bool DownloadContract(
         const Identifier& ID,
-        const ContractType type = ContractType::ERROR) = 0;
+        const ContractType type = ContractType::ZERO) = 0;
     virtual Future GetFuture() = 0;
     virtual bool IssueUnitDefinition(
         const std::shared_ptr<const proto::UnitDefinition> unitDefinition,

@@ -457,7 +457,7 @@ void Identifier::SetString(const std::string& encoded)
             case (ID::BLAKE2B): {
             } break;
             default: {
-                type_ = ID::ERROR;
+                type_ = ID::ZERO;
 
                 return;
             }

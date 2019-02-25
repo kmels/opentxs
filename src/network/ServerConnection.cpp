@@ -409,7 +409,7 @@ NetworkReplyMessage ServerConnection::Send(
         disable_push(context.Nym()->ID());
     }
 
-    NetworkReplyMessage output{SendResult::ERROR, nullptr};
+    NetworkReplyMessage output{SendResult::ZERO, nullptr};
     auto& status = output.first;
     auto& reply = output.second;
     reply.reset(api_.Factory().Message().release());

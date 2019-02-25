@@ -67,7 +67,7 @@ Socket::SendResult RequestSocket::SendRequest(zeromq::Message& request) const
     OT_ASSERT(nullptr != socket_);
 
     Lock lock(lock_);
-    SendResult output{opentxs::SendResult::ERROR, Message::Factory()};
+    SendResult output{opentxs::SendResult::ZERO, Message::Factory()};
     auto& status = output.first;
     auto& reply = output.second;
 

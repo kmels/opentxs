@@ -3365,13 +3365,13 @@ void SwigWrap::Start_Introduction_Server(const std::string& localNymID)
 std::uint8_t SwigWrap::Task_Status(const std::string& id)
 {
     api::client::OTX::TaskID taskID{0};
-    ThreadStatus output{ThreadStatus::ERROR};
+    ThreadStatus output{ThreadStatus::ZERO};
 
     try {
         taskID = std::stoi(id);
         output = client_->OTX().Status(taskID);
     } catch (...) {
-        output = ThreadStatus::ERROR;
+        output = ThreadStatus::ZERO;
     }
 
     return static_cast<std::uint8_t>(output);

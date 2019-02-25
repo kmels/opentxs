@@ -42,7 +42,7 @@ proto::AsymmetricKeyType AsymmetricProvider::CurveToKeyType(
 EcdsaCurve AsymmetricProvider::KeyTypeToCurve(
     const proto::AsymmetricKeyType& type)
 {
-    EcdsaCurve output = EcdsaCurve::ERROR;
+    EcdsaCurve output = EcdsaCurve::ZERO;
 
     switch (type) {
         case (proto::AKEYTYPE_SECP256K1): {

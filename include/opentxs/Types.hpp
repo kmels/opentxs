@@ -197,13 +197,14 @@ enum class Bip32Child : std::uint32_t {
 };
 
 enum class EcdsaCurve : std::uint8_t {
-    ERROR = 0,
+    ZERO = 0,
     SECP256K1 = 1,
     ED25519 = 2,
+    ERROR = 3
 };
 
 enum class NymParameterType : std::uint8_t {
-    ERROR = 0,
+    ZERO = 0,
     RSA = 1,
     SECP256K1 = 2,
     ED25519 = 3
@@ -217,13 +218,13 @@ enum class NymCapability : std::uint8_t {
 };
 
 enum class ID : std::uint8_t {
-    ERROR = 0,
+    ZERO = 0,
     SHA256 = 1,
     BLAKE2B = 2,
 };
 
 enum class ContractType : std::uint8_t {
-    ERROR = 0,
+    ZERO = 0,
     NYM = 1,
     SERVER = 2,
     UNIT = 3,
@@ -519,7 +520,7 @@ enum class SendResult : std::int8_t {
     TRANSACTION_NUMBERS = -3,
     INVALID_REPLY = -2,
     TIMEOUT = -1,
-    ERROR = 0,
+    ZERO = 0,
     UNNECESSARY = 1,
     VALID_REPLY = 2,
     SHUTDOWN = 3,
@@ -532,8 +533,8 @@ enum class ConnectionState : std::uint8_t {
 };
 
 typedef std::pair<SendResult, std::shared_ptr<std::string>> NetworkReplyRaw;
-typedef std::pair<SendResult, std::shared_ptr<String>> NetworkReplyString;
-typedef std::pair<SendResult, std::shared_ptr<Message>> NetworkReplyMessage;
+typedef std::pair<SendResult, std::shared_ptr<opentxs::String>> NetworkReplyString;
+typedef std::pair<SendResult, std::shared_ptr<opentxs::Message>> NetworkReplyMessage;
 
 typedef std::tuple<RequestNumber, TransactionNumber, NetworkReplyMessage>
     CommandResult;
@@ -638,7 +639,7 @@ enum class MessageType : std::uint8_t {
 };
 
 enum class ThreadStatus : std::uint8_t {
-    ERROR = 0,
+    ZERO = 0,
     RUNNING = 1,
     FINISHED_SUCCESS = 2,
     FINISHED_FAILED = 3,
@@ -667,7 +668,7 @@ enum class Depositability : std::int8_t {
 };
 
 enum class BlockchainAccountType : std::uint8_t {
-    ERROR = 0,
+    ZERO = 0,
     BIP32 = 1,
     BIP44 = 2,
 };

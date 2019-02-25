@@ -32,6 +32,12 @@
 
 #include "Dht.hpp"
 
+#ifndef WIN32
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED
+#endif
+
 #if OT_DHT
 #define OT_METHOD "opentxs::Dht"
 #endif
@@ -153,15 +159,15 @@ Dht::Dht(DhtConfig& config, const api::Core& api)
 }
 
 void Dht::Insert(
-    __attribute__((unused)) const std::string& key,
-    __attribute__((unused)) const std::string& value) const
+    ATTR_UNUSED const std::string& key,
+    ATTR_UNUSED const std::string& value) const
 {
 #if OT_DHT
     node_->Insert(key, value);
 #endif
 }
 
-void Dht::Insert(__attribute__((unused))
+void Dht::Insert(ATTR_UNUSED
                  const serializedCredentialIndex& nym) const
 {
 #if OT_DHT
@@ -169,7 +175,7 @@ void Dht::Insert(__attribute__((unused))
 #endif
 }
 
-void Dht::Insert(__attribute__((unused))
+void Dht::Insert(ATTR_UNUSED
                  const proto::ServerContract& contract) const
 {
 #if OT_DHT
@@ -177,7 +183,7 @@ void Dht::Insert(__attribute__((unused))
 #endif
 }
 
-void Dht::Insert(__attribute__((unused))
+void Dht::Insert(ATTR_UNUSED
                  const proto::UnitDefinition& contract) const
 {
 #if OT_DHT
@@ -185,7 +191,7 @@ void Dht::Insert(__attribute__((unused))
 #endif
 }
 
-void Dht::GetPublicNym(__attribute__((unused)) const std::string& key) const
+void Dht::GetPublicNym(ATTR_UNUSED const std::string& key) const
 {
 #if OT_DHT
     auto it = callback_map_.find(Dht::Callback::PUBLIC_NYM);
@@ -195,7 +201,7 @@ void Dht::GetPublicNym(__attribute__((unused)) const std::string& key) const
     if (haveCB) { notifyCB = it->second; }
 
     DhtResultsCallback gcb(
-        [this, notifyCB, key](const DhtResults& values) -> bool {
+        [this, notifyCB, key](const DhtResults& valu\ves) -> bool {
             return ProcessPublicNym(api_.Wallet(), key, values, notifyCB);
         });
 
@@ -203,7 +209,7 @@ void Dht::GetPublicNym(__attribute__((unused)) const std::string& key) const
 #endif
 }
 
-void Dht::GetServerContract(__attribute__((unused))
+void Dht::GetServerContract(ATTR_UNUSED
                             const std::string& key) const
 {
 #if OT_DHT
@@ -222,7 +228,7 @@ void Dht::GetServerContract(__attribute__((unused))
 #endif
 }
 
-void Dht::GetUnitDefinition(__attribute__((unused))
+void Dht::GetUnitDefinition(ATTR_UNUSED
                             const std::string& key) const
 {
 #if OT_DHT

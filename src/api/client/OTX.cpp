@@ -3214,7 +3214,7 @@ ThreadStatus OTX::status(const Lock& lock, const TaskID taskID) const
 
     auto it = task_status_.find(taskID);
 
-    if (task_status_.end() == it) { return ThreadStatus::ERROR; }
+    if (task_status_.end() == it) { return ThreadStatus::ZERO; }
 
     const auto output = it->second.first;
     const bool success = (ThreadStatus::FINISHED_SUCCESS == output);
@@ -3265,7 +3265,7 @@ void OTX::update_task(
             Result cancel{proto::LASTREPLYSTATUS_UNKNOWN, nullptr};
             promise.set_value(std::move(cancel));
         }
-        case ThreadStatus::ERROR:
+        case ThreadStatus::ZERO:
         case ThreadStatus::RUNNING:
         default: {
         }
