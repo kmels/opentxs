@@ -35,3 +35,6 @@ opentxs.kdev4
 .classpath
 .project
 .settings
+
+# Visual studio
+.vs

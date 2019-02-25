@@ -32,7 +32,6 @@
 #include <string>
 
 #define PAGESIZE sysconf(_SC_PAGESIZE)
-#define OT_METHOD "opentxs::OTPassword::"
 #endif
 
 // FT: Credit to the Bitcoin team for the mlock / munlock defines.
@@ -52,6 +51,8 @@
          1) -                                                                  \
             ((reinterpret_cast<std::size_t>(a)) & (~((PAGESIZE)-1))))
 #endif
+
+#define OT_METHOD "opentxs::OTPassword::"
 
 namespace opentxs
 {

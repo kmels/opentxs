@@ -21,10 +21,14 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <cerrno>
+#include <cxxabi.h>
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED 
 #endif
 
+
 #include <sys/types.h>
-#include <cxxabi.h>
 
 #include <cstdarg>
 #include <cstdint>
@@ -582,7 +586,7 @@ namespace
 #endif
 
 // invoke set_terminate as part of global constant initialization
-static const bool SET_TERMINATE __attribute__((unused)) =
+static const bool SET_TERMINATE ATTR_UNUSED =
     std::set_terminate(ot_terminate);
 
 #ifdef _MSC_VER
