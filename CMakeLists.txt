@@ -243,7 +243,9 @@ set(LIBRARY_OUTPUT_PATH  ${CMAKE_CURRENT_BINARY_DIR}/lib)
 INCLUDE(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG(-std=c++17 HAVE_STD17)
 
-if(HAVE_STD17)
+if (MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+elseif(HAVE_STD17)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
@@ -368,6 +370,10 @@ else()
   find_package(Protobuf REQUIRED)
   set(OT_PROTOBUF_HEADERS "${PROTOBUF_INCLUDE_DIR}")
   include_directories(SYSTEM ${OT_PROTOBUF_HEADERS})
+endif()
+
+if (NOT PROTOBUF_LITE_LIBRARIES)
+  set(PROTOBUF_LITE_LIBRARIES ${PROTOBUF_LIBRARIES})
 endif()
 
 if(OT_ZLIB_OVERRIDE)
@@ -748,6 +754,15 @@ if(OT_SCRIPT_USING_CHAI AND NOT ANDROID AND NOT KEYRING_IOS)
   set(SCRIPT_CHAI_EXPORT 1)
 else()
   set(SCRIPT_CHAI_EXPORT 0)
+endif()
+
+if (VCPKG_TOOLCHAIN)
+
+if (NOT OT_BUNDLED_PROTOBUF)
+  find_path(PROTOBUF_INCLUDES google/protobuf/stubs/common.h)
+  include_directories(${PROTOBUF_INCLUDES})
+endif()
+
 endif()
 
 #-----------------------------------------------------------------------------

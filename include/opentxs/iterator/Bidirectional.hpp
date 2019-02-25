@@ -13,6 +13,11 @@
 #include <limits>
 #include <stdexcept>
 
+#ifdef _WIN32
+#undef min
+#undef max
+#endif
+
 namespace opentxs
 {
 namespace iterator
