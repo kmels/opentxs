@@ -24,6 +24,7 @@
 #include <time.h>
 #include <iomanip>
 #include <sstream>
+#define timegm _mkgmtime
 
 extern "C" char* strptime(const char* s, const char* f, struct tm* tm)
 {

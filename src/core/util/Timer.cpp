@@ -21,7 +21,9 @@
 
 #include "opentxs/core/util/Timer.hpp"
 
-#include <sys/time.h>
+#ifndef _WIN32
+#include < sys / time.h >
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // constructor

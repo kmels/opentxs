@@ -146,7 +146,7 @@ public:
             case proto::LASTREPLYSTATUS_NONE:
             default: {
 
-                return SendResult::ERROR;
+                return SendResult::ZERO;
             }
         }
     }

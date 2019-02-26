@@ -31,6 +31,12 @@ extern "C" {
 
 #define OT_METHOD "opentxs::Sodium::"
 
+#ifndef WIN32
+#define ATTR_UNUSED __attribute__((unused))
+#else
+#define ATTR_UNUSED
+#endif
+
 namespace opentxs
 {
 crypto::Sodium* Factory::Sodium(const api::Crypto& crypto)
