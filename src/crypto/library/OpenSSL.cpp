@@ -38,7 +38,9 @@
 #include "OpenSSL_BIO.hpp"
 
 extern "C" {
+#ifndef _WIN32
 #include <netinet/in.h>
+#endif
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 #include <openssl/conf.h>

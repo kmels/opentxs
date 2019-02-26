@@ -199,8 +199,7 @@ enum class Bip32Child : std::uint32_t {
 enum class EcdsaCurve : std::uint8_t {
     ZERO = 0,
     SECP256K1 = 1,
-    ED25519 = 2,
-    ERROR = 3
+    ED25519 = 2
 };
 
 enum class NymParameterType : std::uint8_t {

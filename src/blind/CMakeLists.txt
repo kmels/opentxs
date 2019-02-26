@@ -32,7 +32,7 @@ set(cxx-headers
 
 if(WIN32)
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/windll.rc.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/windll.rc.in
     ${CMAKE_CURRENT_BINARY_DIR}/module.rc
     @ONLY
   )

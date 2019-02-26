@@ -70,12 +70,6 @@
 
 #include "Native.hpp"
 
-#if _WIN32
-// avoid defining min/max macros
-//#undef min
-//#undef max
-#endif
-
 #ifndef _PASSWORD_LEN
 #define _PASSWORD_LEN 128
 #endif
