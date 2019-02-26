@@ -201,7 +201,7 @@ void Dht::GetPublicNym(ATTR_UNUSED const std::string& key) const
     if (haveCB) { notifyCB = it->second; }
 
     DhtResultsCallback gcb(
-        [this, notifyCB, key](const DhtResults& valu\ves) -> bool {
+        [this, notifyCB, key](const DhtResults& values) -> bool {
             return ProcessPublicNym(api_.Wallet(), key, values, notifyCB);
         });
 

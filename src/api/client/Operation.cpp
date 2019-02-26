@@ -2274,7 +2274,7 @@ void Operation::reset()
     target_nym_id_ = identifier::Nym::Factory();
     target_server_id_ = identifier::Server::Factory();
     target_unit_id_ = identifier::UnitDefinition::Factory();
-    contract_type_ = ContractType::ERROR;
+    contract_type_ = ContractType::ZERO;
     unit_definition_.reset();
     account_id_ = Identifier::Factory();
     generic_id_ = Identifier::Factory();
