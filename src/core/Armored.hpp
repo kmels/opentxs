@@ -15,7 +15,13 @@
 
 namespace opentxs::implementation
 {
-class Armored : virtual public opentxs::Armored, public String
+
+template <typename TClonable> TClonable* Construct()
+{
+    return (new Armored<TClonable>());
+}
+
+class Armored : Cloneable<Armored>, virtual public opentxs::Armored, public String
 {
 public:
     bool GetData(Data& theData, bool bLineBreaks = true) const override;

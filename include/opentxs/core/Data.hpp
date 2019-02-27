@@ -46,7 +46,8 @@ bool operator==(OTData& lhs, const Data& rhs);
 bool operator!=(OTData& lhs, const Data& rhs);
 OTData& operator+=(OTData& lhs, const OTData& rhs);
 
-class Data
+class Data : public Cloneable<Data>
+
 {
 public:
     using iterator = opentxs::iterator::Bidirectional<Data, std::byte>;
@@ -119,7 +120,7 @@ protected:
 private:
     friend OTData;
 
-    EXPORT virtual Data* clone() const = 0;
+    //EXPORT virtual Data* clone() const = 0;
 
     Data(const Data& rhs) = delete;
     Data(Data&& rhs) = delete;

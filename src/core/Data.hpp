@@ -9,7 +9,7 @@
 
 namespace opentxs::implementation
 {
-class Data : virtual public opentxs::Data
+class Data : virtual public opentxs::Data, virtual public IClonable
 {
 public:
     bool operator==(const opentxs::Data& rhs) const override;
@@ -75,10 +75,14 @@ protected:
 private:
     friend opentxs::Data;
 
-    Data* clone() const override
-    {
-        return new Data(this->data_, this->position_);
-    }
+	//IClonable* CloneImpl(void) const override;
+
+	IClonable* CloneImpl() const override {return new Data(this->data_, this->position_); }
+
+    //Data* clone() const override
+    //{
+    //    return new Data(this->data_, this->position_);
+    //}
 
     void concatenate(const Vector& data);
 

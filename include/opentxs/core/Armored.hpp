@@ -119,6 +119,7 @@ public:
 protected:
     friend OTArmored;
 
+	//IClonable* CloneImpl(void) const override;
     //virtual Armored* clone() const = 0;
 
     Armored() = default;

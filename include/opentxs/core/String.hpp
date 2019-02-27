@@ -37,27 +37,6 @@
 
 namespace opentxs
 {
-
-class IClonable
-{
-public:
-    virtual IClonable* CloneImpl(void) const = 0;
-
-public:
-    virtual ~IClonable(void) {}
-};
-
-template <typename TDerived>
-class Cloneable : public virtual IClonable
-{
-public:
-    TDerived* clone() const  // notice that this method does not override
-                             // anything
-    {
-        return (dynamic_cast<TDerived*>(
-            dynamic_cast<IClonable const*>(this)->CloneImpl()));
-    }
-};
 class String : public Cloneable<String>
 {
 public:

@@ -473,7 +473,8 @@ bool String::At(std::uint32_t lIndex, char& c) const
         return false;
 }
 
-String* String::clone() const { return new String(*this); }
+IClonable* String::CloneImpl() const { return new String(*this); }
+// String* String::clone() const { return new String(*this); }
 
 // Compare is simple.  True if they match, False if they don't match.
 bool String::Compare(const char* strCompare) const

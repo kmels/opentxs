@@ -11,7 +11,7 @@
 
 namespace opentxs::implementation
 {
-class String : virtual public opentxs::String
+class String : virtual public opentxs::String, public virtual IClonable
 {
 public:
     bool operator>(const opentxs::String& rhs) const override;
@@ -87,8 +87,10 @@ private:
 
     static std::vector<char> make_string(const char* str, std::uint32_t length);
 
-    String* clone() const override;
-    /** Only call this right after calling Initialize() or Release(). Also, this
+	IClonable* CloneImpl() const override;
+    //String* clone() const override;
+    
+	/** Only call this right after calling Initialize() or Release(). Also, this
      * function ASSUMES the new_string pointer is good. */
     void LowLevelSet(const char* data, std::uint32_t enforcedMaxLength);
     /** You better have called Initialize() or Release() before you dare call
