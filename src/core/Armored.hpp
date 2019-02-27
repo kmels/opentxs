@@ -48,7 +48,9 @@ private:
 
     static std::unique_ptr<OTDB::OTPacker> s_pPacker;
 
-    Armored* clone() const override;
+    IClonable* CloneImpl(void) const override;
+
+    //Armored* clone() const override;
     std::string compress_string(
         const std::string& str,
         std::int32_t compressionlevel) const;

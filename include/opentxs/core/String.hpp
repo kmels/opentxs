@@ -37,7 +37,28 @@
 
 namespace opentxs
 {
-class String
+
+class IClonable
+{
+public:
+    virtual IClonable* CloneImpl(void) const = 0;
+
+public:
+    virtual ~IClonable(void) {}
+};
+
+template <typename TDerived>
+class Cloneable : public virtual IClonable
+{
+public:
+    TDerived* clone() const  // notice that this method does not override
+                             // anything
+    {
+        return (dynamic_cast<TDerived*>(
+            dynamic_cast<IClonable const*>(this)->CloneImpl()));
+    }
+};
+class String : public Cloneable<String>
 {
 public:
     using List = std::list<std::string>;
@@ -138,7 +159,7 @@ private:
     friend OTString;
     friend std::ostream& operator<<(std::ostream& os, const String& obj);
 
-    virtual String* clone() const = 0;
+    //virtual String* clone() const = 0;
 
     String(String&& rhs) = delete;
     String& operator=(const String& rhs) = delete;

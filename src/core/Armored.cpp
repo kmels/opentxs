@@ -179,7 +179,7 @@ Armored& Armored::operator=(const Armored& strValue)
     return *this;
 }
 
-Armored* Armored::clone() const { return new Armored(*this); }
+IClonable* Armored::CloneImpl() const { return new Armored(*this); }
 
 // Source for these two functions: http://panthema.net/2007/0328-ZLibString.html
 /** Compress a STL string using zlib with given compression level and return

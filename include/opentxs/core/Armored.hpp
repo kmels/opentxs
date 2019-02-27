@@ -119,7 +119,7 @@ public:
 protected:
     friend OTArmored;
 
-    virtual Armored* clone() const = 0;
+    //virtual Armored* clone() const = 0;
 
     Armored() = default;
 
