@@ -8,7 +8,7 @@
 
 #include "opentxs/Forward.hpp"
 
-#include "opentxs/ui/Widget.hpp"
+#include "opentxs/ui/List.hpp"
 
 #ifdef SWIG
 // clang-format off
@@ -20,8 +20,12 @@ namespace opentxs
 {
 namespace ui
 {
-class PayableList : virtual public Widget
+class PayableList : virtual public List
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     EXPORT virtual opentxs::SharedPimpl<opentxs::ui::PayableListItem> First()
         const = 0;

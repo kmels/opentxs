@@ -8,6 +8,7 @@
 
 #include "opentxs/Forward.hpp"
 
+#include "opentxs/ui/List.hpp"
 #include "opentxs/ui/ListRow.hpp"
 #include "opentxs/Proto.hpp"
 
@@ -32,8 +33,12 @@ namespace opentxs
 {
 namespace ui
 {
-class ProfileSubsection : virtual public ListRow
+class ProfileSubsection : virtual public List, virtual public ListRow
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     EXPORT virtual bool AddItem(
         const std::string& value,

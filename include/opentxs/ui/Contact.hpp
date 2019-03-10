@@ -8,7 +8,7 @@
 
 #include "opentxs/Forward.hpp"
 
-#include "opentxs/ui/Widget.hpp"
+#include "opentxs/ui/List.hpp"
 #include "opentxs/Proto.hpp"
 
 #include <string>
@@ -23,8 +23,12 @@ namespace opentxs
 {
 namespace ui
 {
-class Contact : virtual public Widget
+class Contact : virtual public List
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     EXPORT virtual std::string ContactID() const = 0;
     EXPORT virtual std::string DisplayName() const = 0;

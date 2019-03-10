@@ -10,7 +10,8 @@
 
 #include <string>
 
-#include "ListRow.hpp"
+#include "opentxs/ui/List.hpp"
+#include "opentxs/ui/ListRow.hpp"
 
 #ifdef SWIG
 // clang-format off
@@ -23,8 +24,12 @@ namespace opentxs
 {
 namespace ui
 {
-class IssuerItem : virtual public ListRow
+class IssuerItem : virtual public List, virtual public ListRow
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     EXPORT virtual bool ConnectionState() const = 0;
     EXPORT virtual std::string Debug() const = 0;

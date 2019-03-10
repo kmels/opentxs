@@ -8,6 +8,7 @@
 
 #include "opentxs/Forward.hpp"
 
+#include "opentxs/ui/List.hpp"
 #include "opentxs/ui/ListRow.hpp"
 #include "opentxs/Proto.hpp"
 
@@ -87,8 +88,12 @@ namespace opentxs
 {
 namespace ui
 {
-class ProfileSection : virtual public ListRow
+class ProfileSection : virtual public List, virtual public ListRow
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     using ItemType = std::pair<proto::ContactItemType, std::string>;
     using ItemTypeList = std::vector<ItemType>;

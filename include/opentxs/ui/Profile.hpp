@@ -8,7 +8,7 @@
 
 #include "opentxs/Forward.hpp"
 
-#include "opentxs/ui/Widget.hpp"
+#include "opentxs/ui/List.hpp"
 #include "opentxs/Proto.hpp"
 
 #include <string>
@@ -81,8 +81,12 @@ namespace opentxs
 {
 namespace ui
 {
-class Profile : virtual public Widget
+class Profile : virtual public List
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     using ItemType = std::pair<proto::ContactItemType, std::string>;
     using ItemTypeList = std::vector<ItemType>;

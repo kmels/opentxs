@@ -17,6 +17,29 @@ namespace opentxs::ui::implementation
 class ProfileSubsectionBlank final : public ProfileSectionRowInternal
 {
 public:
+#if OT_QT
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        return 0;
+    }
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole)
+        const override
+    {
+        return {};
+    }
+    QModelIndex index(
+        int row,
+        int column,
+        const QModelIndex& parent = QModelIndex()) const override
+    {
+        return {};
+    }
+    QModelIndex parent(const QModelIndex& index) const override { return {}; }
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        return 0;
+    }
+#endif
     bool AddItem(const std::string&, const bool, const bool) const override
     {
         return false;

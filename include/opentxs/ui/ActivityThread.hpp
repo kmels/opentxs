@@ -8,7 +8,7 @@
 
 #include "opentxs/Forward.hpp"
 
-#include "opentxs/ui/Widget.hpp"
+#include "opentxs/ui/List.hpp"
 #include "opentxs/Proto.hpp"
 
 #include <string>
@@ -31,8 +31,12 @@ namespace opentxs
 {
 namespace ui
 {
-class ActivityThread : virtual public Widget
+class ActivityThread : virtual public List
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     EXPORT virtual std::string DisplayName() const = 0;
     EXPORT virtual opentxs::SharedPimpl<opentxs::ui::ActivityThreadItem> First()

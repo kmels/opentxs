@@ -17,6 +17,12 @@
 
 #define LIST_METHOD "opentxs::ui::implementation::List::"
 
+template <class T>
+T* unconst_cast(const T* v)
+{
+    return const_cast<T*>(v);
+}
+
 namespace opentxs::ui::implementation
 {
 template <typename T>
@@ -59,6 +65,10 @@ class List : virtual public ExternalInterface,
              virtual public InternalInterface,
              public Widget,
              public Lockable
+#if OT_QT
+    ,
+             virtual public QAbstractItemModel
+#endif
 {
 public:
     using Inner = std::map<RowID, std::shared_ptr<RowInternal>>;
@@ -66,12 +76,34 @@ public:
     using Sort = sort_order<Outer, InternalInterface>;
     using OuterIterator = typename Sort::iterator;
 
+#if OT_QT
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        return 0;
+    }
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole)
+        const override
+    {
+        return {};
+    }
+#endif
+
     SharedPimpl<RowInterface> First() const override
     {
         Lock lock(lock_);
 
         return SharedPimpl<RowInterface>(first(lock));
     }
+
+#if OT_QT
+    QModelIndex index(
+        int row,
+        int column,
+        const QModelIndex& parent = QModelIndex()) const override
+    {
+        return {};
+    }
+#endif
 
     virtual bool last(const RowID& id) const override
     {
@@ -88,6 +120,19 @@ public:
 
         return SharedPimpl<RowInterface>(next(lock));
     }
+
+#if OT_QT
+    QModelIndex parent(const QModelIndex& index) const override { return {}; }
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        Lock lock(lock_);
+        int output{start_row()};
+
+        for (const auto& [key, value] : items_) { output += value.size(); }
+
+        return output;
+    }
+#endif
 
     OTIdentifier WidgetID() const override { return widget_id_; }
 
@@ -123,7 +168,7 @@ protected:
      *  iterators. */
     const std::shared_ptr<const RowInternal> current(const Lock& lock) const
     {
-        OT_ASSERT(verify_lock(lock))
+        OT_ASSERT(verify_lock(lock));
 
         valid_iterators();
         /* TODO: this line will cause a segfault in the clang-5 ast parser.
@@ -159,7 +204,7 @@ protected:
     }
     void delete_item(const Lock& lock, const RowID& id) const
     {
-        OT_ASSERT(verify_lock(lock))
+        OT_ASSERT(verify_lock(lock));
 
         try {
             auto& key = names_.at(id);
@@ -171,6 +216,10 @@ protected:
             // pointing to it
             if (inner_ == item) { increment_inner(lock); }
 
+#if OT_QT
+            const auto row = find_delete_point(lock, id);
+            unconst_cast(this)->beginRemoveRows(me(), row, row);
+#endif
             const auto itemDeleted = inner.erase(id);
 
             OT_ASSERT(1 == itemDeleted)
@@ -182,13 +231,17 @@ protected:
             OT_ASSERT(1 == indexDeleted)
         } catch (...) {
         }
+
+#if OT_QT
+        unconst_cast(this)->endRemoveRows();
+#endif
     }
     /** Returns first contact, or blank if none exists. Sets up iterators for
      *  next row
      */
     virtual std::shared_ptr<const RowInternal> first(const Lock& lock) const
     {
-        OT_ASSERT(verify_lock(lock))
+        OT_ASSERT(verify_lock(lock));
 
         have_items_->Set(first_valid_item(lock));
         start_->Set(!have_items_.get());
@@ -204,7 +257,7 @@ protected:
     }
     RowInternal& find_by_id(const Lock& lock, const RowID& id) const
     {
-        OT_ASSERT(verify_lock(lock))
+        OT_ASSERT(verify_lock(lock));
 
         try {
             auto& key = names_.at(id);
@@ -310,6 +363,16 @@ protected:
 
         return true;
     }
+#if OT_QT
+    QModelIndex me() const
+    {
+        return createIndex(
+            0,
+            0,
+            const_cast<ExternalInterface*>(
+                static_cast<const ExternalInterface*>(this)));
+    }
+#endif
     /** Returns the next item and increments iterators */
     const std::shared_ptr<const RowInternal> next(const Lock& lock) const
     {
@@ -342,7 +405,11 @@ protected:
         // I'm about to delete this row. Make sure iterators are not pointing
         // to it
         if (inner_ == item) { increment_inner(lock); }
-
+#if OT_QT
+        const auto oldrow = find_delete_point(lock, id);
+        const auto newrow = find_insert_point(lock, id, newIndex);
+        unconst_cast(this)->beginMoveRows(me(), oldrow, oldrow, me(), newrow);
+#endif
         std::shared_ptr<RowInternal> row = std::move(item->second);
         const auto deleted = itemMap.erase(id);
 
@@ -353,6 +420,10 @@ protected:
         names_[id] = newIndex;
         row->reindex(newIndex, custom);
         items_[newIndex].emplace(id, std::move(row));
+
+#if OT_QT
+        unconst_cast(this)->endMoveRows();
+#endif
     }
     virtual bool same(const RowID& lhs, const RowID& rhs) const
     {
@@ -387,7 +458,12 @@ protected:
         const network::zeromq::PublishSocket& publisher,
         const Identifier& nymID,
         const Identifier& widgetID)
-        : Widget(api, publisher, widgetID)
+        :
+#if OT_QT
+        QAbstractItemModel()
+        ,
+#endif
+        Widget(api, publisher, widgetID)
         , nym_id_(Identifier::Factory(nymID))
         , items_()
         , outer_(items_.begin())
@@ -412,6 +488,64 @@ protected:
     }
 
 private:
+#if OT_QT
+    int find_delete_point(const Lock& lock, const RowID& id) const
+    {
+        OT_ASSERT(verify_lock(lock));
+
+        int output{1};  // Row 0 is the header
+
+        for (const auto& [sortKey, map] : items_) {
+            for (const auto& [rowID, pRow] : map) {
+                if (rowID == id) {
+
+                    return output;
+                } else {
+                    ++output;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    int find_insert_point(
+        const Lock& lock,
+        const RowID& id,
+        const SortKey& index) const
+    {
+        OT_ASSERT(verify_lock(lock));
+
+        int output{start_row()};
+
+        for (const auto& [sortKey, map] : items_) {
+            if (sortKey < index) {
+                output += map.size();
+            } else if (sortKey == index) {
+                for (const auto& [rowID, pRow] : map) {
+                    if (rowID == id) {
+
+                        return output;
+                    } else if (id < rowID) {
+
+                        return output - 1;
+                    } else {
+                        ++output;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+
+        return output;
+    }
+#endif
+
+#if OT_QT
+    virtual int start_row() const { return 0; }
+#endif
+
     void insert_outer(
         const RowID& id,
         const SortKey& index,
@@ -420,7 +554,14 @@ private:
         Lock lock(lock_);
 
         if (0 == names_.count(id)) {
+#if OT_QT
+            const auto row = find_insert_point(lock, id, index);
+            beginInsertRows(me(), row, row + 1);
+#endif
             construct_row(id, index, custom);
+#if OT_QT
+            endInsertRows();
+#endif
 
             OT_ASSERT(1 == items_.count(index))
             OT_ASSERT(1 == names_.count(id))
