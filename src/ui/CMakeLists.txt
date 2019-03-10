@@ -3,6 +3,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+if(OT_WITH_QT)
+  add_definitions(${Qt5Core_DEFINITIONS})
+  add_definitions(${Qt5Gui_DEFINITIONS})
+  add_definitions(${Qt5Widgets_DEFINITIONS})
+endif()
+
 set(cxx-sources
   AccountActivity.cpp
   AccountList.cpp
@@ -114,6 +120,12 @@ set(cxx-headers
   "${CMAKE_CURRENT_SOURCE_DIR}/Widget.hpp"
 )
 
+if(OT_WITH_QT)
+  QT5_WRAP_CPP( MOC_SRCS ${cxx-headers} )
+else()
+  set(MOC_SRCS "")
+endif()
+
 set(MODULE_NAME opentxs-ui)
 
 if(WIN32)
@@ -133,12 +145,14 @@ if(WIN32)
   add_library(${MODULE_NAME} OBJECT
     ${cxx-sources}
     ${cxx-headers}
+    ${MOC_SRCS}
     ${CMAKE_CURRENT_BINARY_DIR}/module.rc
   )
 else()
   add_library(${MODULE_NAME} OBJECT
     ${cxx-sources}
     ${cxx-headers}
+    ${MOC_SRCS}
   )
 endif()
 

@@ -333,6 +333,10 @@ if(OT_SHARED)
       target_link_libraries(${MODULE_NAME} PRIVATE ${Boost_SYSTEM_LIBRARIES} ${Boost_FILESYSTEM_LIBRARIES} ${Boost_IOSTREAMS_LIBRARIES})
   endif()
 
+  if(OT_WITH_QT)
+     target_link_libraries(${MODULE_NAME} PRIVATE ${Qt5Widgets_LIBRARIES} ${Qt5Core_LIBRARIES})
+  endif()
+
   install(TARGETS ${MODULE_NAME}
           DESTINATION ${CMAKE_INSTALL_LIBDIR}
           EXPORT ${MODULE_NAME}-targets
@@ -400,6 +404,10 @@ if(OT_STATIC)
 
   if (OT_STORAGE_FS)
       target_link_libraries(${MODULE_NAME}_static PRIVATE ${Boost_SYSTEM_LIBRARIES} ${Boost_FILESYSTEM_LIBRARIES} ${Boost_IOSTREAMS_LIBRARIES})
+  endif()
+
+  if(OT_WITH_QT)
+     target_link_libraries(${MODULE_NAME}_static PRIVATE ${Qt5Widgets_LIBRARIES} ${Qt5Core_LIBRARIES})
   endif()
 
   install(TARGETS ${MODULE_NAME}_static

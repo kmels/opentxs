@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(opentxs)
 include(GNUInstallDirs)
 
@@ -96,7 +96,9 @@ option(OT_CRYPTO_USING_LIBBITCOIN  "Enable libbitcoin support" OFF)
 option(OT_CRYPTO_SHA2_PREFER_OPENSSL       "Use OpenSSL SHA2 implementation when available" OFF)
 
 option(OT_CASH_USING_LUCRE  "Enable Lucre support" OFF)
-option(OT_LUCRE_DEBUG 		"Output Lucre debug info" OFF)
+option(OT_LUCRE_DEBUG       "Output Lucre debug info" OFF)
+
+option(OT_WITH_QT       "Enable Qt5 model support for ui classes" OFF)
 
 if(ANDROID)
   option(OT_SCRIPT_USING_CHAI  "Use chaiscript" OFF)
@@ -213,6 +215,9 @@ message(STATUS "Default Python binding: ${PYTHON}")
 message(STATUS "Script engines-------------------------------")
 message(STATUS "Chai:                   ${OT_SCRIPT_USING_CHAI}")
 
+message(STATUS "UI-------------------------------------------")
+message(STATUS "Qt5:                    ${OT_WITH_QT}")
+
 message(STATUS "Dependencies---------------------------------")
 message(STATUS "Bundled libressl:       ${OT_BUNDLED_SSL}")
 message(STATUS "Bundled protobuf:       ${OT_BUNDLED_PROTOBUF}")
@@ -240,14 +245,9 @@ set(LIBRARY_OUTPUT_PATH  ${CMAKE_CURRENT_BINARY_DIR}/lib)
 #-----------------------------------------------------------------------------
 # Check which compiler to use
 
-INCLUDE(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG(-std=c++17 HAVE_STD17)
-
-if(HAVE_STD17)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
-endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES GNU)
   set(GCC_WARN_FLAGS "-Wno-attributes -Wnoexcept -Wstrict-null-sentinel -Wlogical-op -Wno-parentheses")
@@ -421,7 +421,7 @@ if(OT_STORAGE_FS)
   find_package(Boost REQUIRED system)
 endif()
 
-if (OT_CRYPTO_USING_LIBSECP256K1)
+if(OT_CRYPTO_USING_LIBSECP256K1)
   if (OT_BUNDLED_SECP256K1)
     set(OT_SECP256K1_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/deps/secp256k1/install/include")
   else()
@@ -432,6 +432,13 @@ endif()
 
 if (OT_CRYPTO_USING_LIBBITCOIN)
   find_package(libbitcoin REQUIRED)
+endif()
+
+if(OT_WITH_QT)
+  find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+  set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "RELEASE")
+  list(GET Qt5Core_INCLUDE_DIRS 0 QT_INCLUDE_DIR)
+  include_directories("${QT_INCLUDE_DIR}")
 endif()
 
 #-----------------------------------------------------------------------------
@@ -688,17 +695,23 @@ endif()
 
 set(OT_CASH_EXPORT 0)
 
-if (OT_CASH_USING_LUCRE)
+if(OT_CASH_USING_LUCRE)
     set(CASH_LUCRE_EXPORT 1)
     set(OT_CASH_EXPORT 1)
 else()
     set(CASH_LUCRE_EXPORT 0)
 endif()
 
-if (OT_LUCRE_DEBUG)
-	add_definitions(-DOT_LUCRE_DEBUG=1)
+if(OT_LUCRE_DEBUG)
+    add_definitions(-DOT_LUCRE_DEBUG=1)
 else()
-	add_definitions(-DOT_LUCRE_DEBUG=0)
+    add_definitions(-DOT_LUCRE_DEBUG=0)
+endif()
+
+if(OT_WITH_QT)
+    set(OT_QT_EXPORT 1)
+else()
+    set(OT_QT_EXPORT 0)
 endif()
 
 if (FALSE)
@@ -752,7 +765,7 @@ endif()
 
 #-----------------------------------------------------------------------------
 # Set in-source Version
-configure_file("Version.hpp" "${CMAKE_CURRENT_BINARY_DIR}/include/opentxs/Version.hpp" @ONLY)
+configure_file("Version.hpp.in" "${CMAKE_CURRENT_BINARY_DIR}/include/opentxs/Version.hpp" @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/opentxs/Version.hpp
         DESTINATION include/opentxs/
