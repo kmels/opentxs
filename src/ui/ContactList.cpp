@@ -14,9 +14,7 @@
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
-#include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
@@ -25,12 +23,9 @@
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/SubscribeSocket.hpp"
-#include "opentxs/ui/ContactList.hpp"
 #include "opentxs/ui/ContactListItem.hpp"
 
-#include "internal/ui/UI.hpp"
 #include "ContactListItemBlank.hpp"
-#include "List.hpp"
 
 #include <map>
 #include <memory>
@@ -127,6 +122,44 @@ void ContactList::construct_row(
         id, Factory::ContactListItem(*this, api_, publisher_, id, index));
 }
 
+#if OT_QT
+QVariant ContactList::data(const QModelIndex& index, int role) const
+{
+    if (false == index.isValid()) { return {}; }
+
+    if (columnCount() < index.column()) { return {}; }
+
+    const ContactListItem* pRow{
+        (0 == index.row())
+            ? owner_.get()
+            : static_cast<ContactListItem*>(index.internalPointer())};
+
+    if (nullptr == pRow) { return {}; }
+
+    const auto& row = *pRow;
+
+    switch (role) {
+        case IDRole: {
+            return row.ContactID().c_str();
+        }
+        case NameRole: {
+            return row.DisplayName().c_str();
+        }
+        case ImageRole: {
+            return row.ImageURI().c_str();
+        }
+        case SectionRole: {
+            return row.Section().c_str();
+        }
+        default: {
+            return {};
+        }
+    }
+
+    return {};
+}
+#endif
+
 /** Returns owner contact. Sets up iterators for next row */
 std::shared_ptr<const ContactListRowInternal> ContactList::first(
     const Lock& lock) const
@@ -139,6 +172,39 @@ std::shared_ptr<const ContactListRowInternal> ContactList::first(
 
     return owner_;
 }
+
+#if OT_QT
+QModelIndex ContactList::index(int row, int column, const QModelIndex& parent)
+    const
+{
+    if (columnCount() < column) { return {}; }
+
+    if (0 == row) {
+
+        return createIndex(row, column, owner_.get());
+    } else {
+        Lock lock(lock_);
+        int i{start_row()};
+        ContactListItem* item{nullptr};
+
+        for (const auto& [sortKey, map] : items_) {
+            for (const auto& [index, pRow] : map) {
+                if (i == row) {
+                    item = pRow.get();
+                    goto exit;
+                } else {
+                    ++i;
+                }
+            }
+        }
+
+    exit:
+        if (nullptr == item) { return {}; }
+
+        return createIndex(row, column, item);
+    }
+}
+#endif
 
 void ContactList::process_contact(const network::zeromq::Message& message)
 {
@@ -153,6 +219,19 @@ void ContactList::process_contact(const network::zeromq::Message& message)
     const auto name = api_.Contacts().ContactName(contactID);
     add_item(contactID, name, {});
 }
+
+#if OT_QT
+QHash<int, QByteArray> ContactList::roleNames() const
+{
+    QHash<int, QByteArray> output;
+    output[IDRole] = "id";
+    output[NameRole] = "name";
+    output[ImageRole] = "image";
+    output[SectionRole] = "section";
+
+    return output;
+}
+#endif
 
 void ContactList::startup()
 {

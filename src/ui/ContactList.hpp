@@ -7,6 +7,13 @@
 
 #include "Internal.hpp"
 
+#include "opentxs/core/Flag.hpp"
+#include "opentxs/core/Lockable.hpp"
+#include "opentxs/ui/ContactList.hpp"
+
+#include "internal/ui/UI.hpp"
+#include "List.hpp"
+
 namespace opentxs::ui::implementation
 {
 using ContactListList = List<
@@ -20,12 +27,31 @@ using ContactListList = List<
 
 class ContactList final : public ContactListList
 {
+#if OT_QT
+    Q_OBJECT
+#endif
+
 public:
     std::string AddContact(
         const std::string& label,
         const std::string& paymentCode,
         const std::string& nymID) const override;
+#if OT_QT
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        return 1;
+    }
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole)
+        const override;
+#endif
     const Identifier& ID() const override { return owner_contact_id_; }
+#if OT_QT
+    QModelIndex index(
+        int row,
+        int column,
+        const QModelIndex& parent = QModelIndex()) const override;
+    QHash<int, QByteArray> roleNames() const override;
+#endif
 
     ~ContactList();
 
@@ -52,6 +78,8 @@ private:
         const ContactListSortKey& index,
         const CustomData& custom) override;
     void process_contact(const network::zeromq::Message& message);
+
+    int start_row() const override { return 1; }
     void startup();
 
     ContactList(

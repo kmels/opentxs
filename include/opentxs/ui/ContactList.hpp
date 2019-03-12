@@ -24,6 +24,14 @@ class ContactList : virtual public List
 {
 #if OT_QT
     Q_OBJECT
+
+public:
+    enum ContactListRoles {
+        IDRole = Qt::UserRole + 1,
+        NameRole = Qt::UserRole + 2,
+        ImageRole = Qt::UserRole + 3,
+        SectionRole = Qt::UserRole + 4,
+    };
 #endif
 
 public:
