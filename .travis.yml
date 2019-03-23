@@ -19,12 +19,11 @@ install:
   # cppcheck
   - sudo apt-get install -qq cppcheck
   - sudo apt-get install libprotobuf-dev protobuf-compiler
-  - cd; git clone git@github.com:Open-Transactions/opentxs-proto.git; cd opentxs-proto; mkdir build; cmake .. ; make -j5 ; sudo make install
 
 script:
   - cmake --version
   #- git fetch --unshallow 
-  - mkdir build; cd build; cmake -DOT_SANITIZE=OFF -DJAVA=OFF -DOT_STORAGE_SQLITE=ON .. -DOT_BUNDLED_PROTOBUF=OFF -DOT_BUNDLED_SODIUM=OFF  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DOT_BUNDLED_OPENTXS_PROTO=OFF -DOT_BUNDLED_SSL=OFF -DOT_BUNDLED_SECP256K1=OFF -DOT_BUNDLED_LMDB=OFF -DOT_BUNDLED_SQLITE=OFF -DOT_BUNDLED_LIBZMQ=OFF -DOT_STORAGE_FS=ON -DOT_WITH_QT=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DOT_CASH_USING_LUCRE=OFF
+  - mkdir build; cd build; cmake -DOT_SANITIZE=OFF -DJAVA=OFF -DOT_STORAGE_SQLITE=ON .. -DOT_BUNDLED_PROTOBUF=ON -DOT_BUNDLED_SODIUM=OFF  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DOT_BUNDLED_OPENTXS_PROTO=ON -DOT_BUNDLED_SSL=OFF -DOT_BUNDLED_SECP256K1=OFF -DOT_BUNDLED_LMDB=OFF -DOT_BUNDLED_SQLITE=OFF -DOT_BUNDLED_LIBZMQ=OFF -DOT_STORAGE_FS=ON -DOT_WITH_QT=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DOT_CASH_USING_LUCRE=OFF
   - make -j5
   
 addons:
