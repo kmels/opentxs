@@ -8,12 +8,7 @@ compiler:
 before_install:
 # C++17
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-  - sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main"
-  - echo "deb https://apt.dockerproject.org/repo ubuntu-xenial main" | sudo tee /etc/apt/sources.list.d/llvm.list
   - sudo apt-get update -qq
-  - sudo apt-get install -y clang-8
-  - update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 100
   
 install:
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8; fi
