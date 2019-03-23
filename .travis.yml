@@ -25,6 +25,9 @@ install:
   - sudo apt-get install liblmdb-dev
   - sudo apt-get install libboost-dev libboost-filesystem-dev libboost-iostreams-dev
   - sudo apt-get install libgtest-dev
+  #fix GTest, symlink libgtest.a and libgtest_main.a to /usr/lib folder
+  # - sudo apt-get install cmake # install cmake
+  - cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make && sudo cp *.a /usr/lib
 
 script:
   - cmake --version
