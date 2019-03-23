@@ -1,6 +1,8 @@
 os: linux
 dist: xenial
 language: cpp
+git:
+  depth: 9999999
 compiler:
   - gcc
   - clang
