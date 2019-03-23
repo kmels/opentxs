@@ -18,7 +18,7 @@ install:
 
   # cppcheck
   - sudo apt-get install -qq cppcheck
-  - sudo apt-get install libprotobuf-dev protobuf-compiler
+  - sudo apt-get install libprotobuf-dev protobuf-compiler libprotoc-dev
   - sudo apt-get install libsodium-dev libssl-dev
   - sudo add-apt-repository -y ppa:tah83/secp256k1 && sudo apt-get update
   - sudo apt-get install libsecp256k1-dev libzmq-dev libsqlite3-dev
