@@ -18,7 +18,7 @@ install:
 
   # cppcheck
   - sudo apt-get install -qq cppcheck
-  - sudo apt-get install libprotobuf-dev protobuf-compiler
+  - sudo apt-get install libprotobuf-dev protobuf-compiler libsodium-dev libssl-dev libsecp256k1-dev libzmq-dev libsqlite3-dev
 
 script:
   - cmake --version
