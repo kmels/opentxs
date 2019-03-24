@@ -18,6 +18,7 @@ install:
 
   # cppcheck
   - sudo apt-get install -qq cppcheck
+  - sudo apt-get install qt5-default
   - cd ${TRAVIS_BUILD_DIR} && wget https://github.com/protocolbuffers/protobuf/releases/download/v3.5.0/protobuf-all-3.5.0.zip && unzip proto*3.5.0.zip && cd protobuf-3.5.0 && ./configure && make -j5 && sudo make install
   #- sudo apt-get install libprotobuf-dev protobuf-compiler libprotoc-dev
   - sudo apt-get install libsodium-dev libssl-dev
