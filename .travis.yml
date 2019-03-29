@@ -1,11 +1,12 @@
 os: linux
 dist: xenial
+sudo: required
 language: cpp
 git:
   depth: 9999999
 compiler:
   - gcc
-  - clang
+#  - clang
 before_install:
 # C++17
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
@@ -13,8 +14,9 @@ before_install:
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-7; fi
   - if [ "$CXX" = "g++" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90; fi
   - if [ "$CXX" == "clang++" ]; then wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add  && sudo apt-get update; fi
-  - if [ "$CXX" == "clang++" ]; then sudo apt-get install clang-7 lldb-7 lld-7; fi
-  
+ - if [ "$CXX" == "clang++" ]; then sudo apt-get install clang-7 lldb-7 lld-7; fi
+w
+	
 install: 
   - sudo apt-get install qt5-default
   - cd ${TRAVIS_BUILD_DIR} && wget https://github.com/protocolbuffers/protobuf/releases/download/v3.5.0/protobuf-all-3.5.0.zip && unzip proto*3.5.0.zip && cd protobuf-3.5.0 && ./configure && make -j5 && sudo make install
@@ -31,6 +33,7 @@ install:
 
 script:
   - cmake --version
+  - cat /proc/cpuinfo | awk '/^processor/{print $3}' | wc -l  
   #- git fetch --unshallow 
   - mkdir ${TRAVIS_BUILD_DIR}/build
   - cd ${TRAVIS_BUILD_DIR}/build && cmake -DOT_SANITIZE=OFF -DJAVA=OFF -DOT_STORAGE_SQLITE=ON .. -DOT_BUNDLED_PROTOBUF=OFF -DOT_BUNDLED_SODIUM=OFF -DOT_BUNDLED_OPENTXS_PROTO=ON -DOT_BUNDLED_SSL=OFF -DOT_BUNDLED_SECP256K1=OFF -DOT_BUNDLED_LMDB=OFF -DOT_BUNDLED_SQLITE=OFF -DOT_BUNDLED_LIBZMQ=OFF -DOT_STORAGE_FS=ON -DOT_WITH_QT=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DOT_CASH_USING_LUCRE=OFF && make -j5
